@@ -23,10 +23,23 @@ class ProductionNotificationService {
       if (permission !== 'granted') {
         return {
           success: false,
-          error: 'Please enable notifications in browser settings.'
+          error: 'Please enable notifications in app or browser settings.'
         };
       }
-
+        // Mobile-specific FCM setup
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile && 'serviceWorker' in navigator) {
+      // Register Firebase messaging service worker for mobile
+      try {
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        console.log('Mobile FCM SW registered:', registration);
+      } catch (swError) {
+        console.warn('FCM SW registration failed:', swError);
+        // Continue without FCM - use browser notifications
+      }
+    }
+    
       // Ensure user books are fetched (used elsewhere in notifications)
       try {
         await bookService.getUserBooks(userId);
@@ -276,45 +289,74 @@ async getUserBooksWithDueDates(userId) {
   }
 
   // Immediate book notification
-  async sendImmediateBookNotification(book) {
-    const daysRemaining = book.daysRemaining;
-    let title, body;
-
-    if (daysRemaining === 0) {
-      title = '⏰ BookMate - Due Today!';
-      body = `"${book.title}" is due TODAY (${book.dueDateFormatted}). Return now to avoid fines!`;
-    } else if (daysRemaining === 1) {
-      title = '📚 BookMate - Due Tomorrow';
-      body = `"${book.title}" is due TOMORROW (${book.dueDateFormatted}). Don't forget to return it!`;
-    } else if (daysRemaining > 1) {
-      title = '📚 BookMate - Due Soon';
-      body = `"${book.title}" is due in ${daysRemaining} days (${book.dueDateFormatted})`;
-    } else {
-      const daysOverdue = Math.abs(daysRemaining);
-      title = '🚨 BookMate - OVERDUE!';
-      body = `"${book.title}" is ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue! Fine: ₹${book.currentFine}. Return immediately!`;
+ // Update sendImmediateBookNotification in productionNotificationService.js
+async sendImmediateBookNotification(book) {
+  try {
+    // Ensure book data is complete
+    if (!book || !book.title) {
+      console.error('Invalid book data:', book);
+      return false;
     }
 
-    const notification = new Notification(title, {
+    const title = `📚 BookMate: ${book.title}`;
+    let body = '';
+    
+    // Safe status check
+    if (book.daysRemaining < 0) {
+      const daysOverdue = Math.abs(book.daysRemaining);
+      body = `Overdue by ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''}! Fine: ₹${book.fine || 0}`;
+    } else if (book.daysRemaining === 0) {
+      body = `Due today! Return to avoid fine.`;
+    } else if (book.daysRemaining === 1) {
+      body = `Due tomorrow! Don't forget to return.`;
+    } else {
+      body = `Due in ${book.daysRemaining} days. Plan your return!`;
+    }
+
+    // Create notification options with safe data
+    const notificationOptions = {
       body,
       icon: '/icons/icon-192x192.png',
-      tag: `production-${book.id}`,
-      data: { bookId: book.id },
-      requireInteraction: daysRemaining <= 0,
-      silent: false
-    });
-
-    notification.onclick = () => {
-      window.focus();
-      window.location.href = '/dashboard';
-      notification.close();
+      badge: '/icons/icon-72x72.png',
+      tag: `book-${book.id || 'unknown'}`,
+      data: {
+        bookId: book.id || null,
+        bookTitle: book.title || 'Unknown Book',
+        dueDate: book.dueDateFormatted || book.dueDate,
+        daysRemaining: book.daysRemaining,
+        fine: book.fine || 0
+      },
+      requireInteraction: true,
+      actions: [
+        {
+          action: 'view',
+          title: 'View Book'
+        }
+      ]
     };
 
-    const autoCloseTime = daysRemaining < 0 ? 15000 : 10000;
-    setTimeout(() => notification.close(), autoCloseTime);
+    // Try browser notification first
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, notificationOptions);
+      return true;
+    }
 
-    return notification;
+    // Fallback for mobile - try service worker notification
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(title, notificationOptions);
+      return true;
+    }
+
+    console.warn('No notification method available');
+    return false;
+
+  } catch (error) {
+    console.error('Error sending notification:', error);
+    return false;
   }
+}
+
 
   async updateLastCheckTime(userId) {
     try {
