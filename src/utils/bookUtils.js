@@ -1,4 +1,5 @@
-// src/utils/bookUtils.js
+// src/utils/bookUtils.js - VERCEL-COMPATIBLE TIMEZONE FIX
+
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -7,7 +8,7 @@ export const bookUtils = {
   calculateDueDate: (issueDate) => {
     const issue = new Date(issueDate);
     const due = new Date(issue);
-    due.setDate(issue.getDate() + 14); // 14 days loan period
+    due.setDate(issue.getDate() + 14);
     return due;
   },
 
@@ -20,27 +21,36 @@ export const bookUtils = {
     });
   },
 
-  // FIXED: Calculate days remaining (positive = future, negative = overdue)
+  // VERCEL-COMPATIBLE: Calculate days remaining with IST timezone
   calculateDaysRemaining: (dueDate) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Start of today
+    // Always calculate in IST regardless of server timezone
+    const now = new Date();
     
+    // Convert to IST (UTC+5:30)
+    const istOffset = 5.5 * 60; // IST offset in minutes
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const istTime = new Date(utc + (istOffset * 60000));
+    
+    // Set to start of day in IST
+    istTime.setHours(0, 0, 0, 0);
+    
+    // Convert due date to IST
     const due = new Date(dueDate);
-    due.setHours(0, 0, 0, 0); // Start of due date (NOT end of day)
+    const utcDue = due.getTime() + (due.getTimezoneOffset() * 60000);
+    const istDue = new Date(utcDue + (istOffset * 60000));
+    istDue.setHours(0, 0, 0, 0);
     
-    const diffTime = due.getTime() - today.getTime();
+    const diffTime = istDue.getTime() - istTime.getTime();
     const days = diffTime / (1000 * 60 * 60 * 24);
     
-    // Use Math.round() for accurate day counting
     return Math.round(days);
   },
 
-  // Get user's fine rate from Firestore
+  // Rest of your existing methods...
   getUserFineRate: async (userId) => {
     try {
       const userRef = doc(db, 'users', userId);
       const userDoc = await getDoc(userRef);
-      
       if (userDoc.exists()) {
         return userDoc.data().finePerDay || 1;
       }
@@ -50,36 +60,28 @@ export const bookUtils = {
     }
   },
 
-  // Calculate fine synchronously using book's stored fine rate
   calculateFineSync: (dueDate, finePerDay = 1) => {
     const daysRemaining = bookUtils.calculateDaysRemaining(dueDate);
-    
     if (daysRemaining >= 0) {
-      return 0; // Not overdue
+      return 0;
     }
-    
     const daysOverdue = Math.abs(daysRemaining);
     return daysOverdue * finePerDay;
   },
 
-  // Calculate fine async (fallback method)
   calculateFine: async (dueDate, userId, bookFineRate = null) => {
     const daysRemaining = bookUtils.calculateDaysRemaining(dueDate);
-    
     if (daysRemaining >= 0) {
-      return 0; // Not overdue
+      return 0;
     }
-
     let fineRate = bookFineRate;
     if (!fineRate) {
       fineRate = await bookUtils.getUserFineRate(userId);
     }
-
     const daysOverdue = Math.abs(daysRemaining);
     return daysOverdue * fineRate;
   },
 
-  // Get book status and styling info
   getStatusInfo: (daysRemaining, fine = 0) => {
     if (daysRemaining < 0) {
       return {
@@ -134,7 +136,6 @@ export const bookUtils = {
     }
   },
 
-  // Legacy method for backward compatibility
   getBookStatus: (dueDate) => {
     const daysRemaining = bookUtils.calculateDaysRemaining(dueDate);
     const statusInfo = bookUtils.getStatusInfo(daysRemaining);

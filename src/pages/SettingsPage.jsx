@@ -720,20 +720,23 @@ const SettingsPage = () => {
                     </div>
                     
                     <button
-                      onClick={handleNotificationToggle}
-                      disabled={loading}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2 ${
-                        settings.notificationsEnabled
-                          ? 'bg-accent-primary'
-                          : 'bg-theme-border'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          settings.notificationsEnabled ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
+  onClick={handleNotificationToggle}
+  disabled={loading}
+  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2 focus:ring-offset-theme-bg ${
+    settings.notificationsEnabled
+      ? 'bg-accent-primary shadow-md'
+      : 'bg-theme-border hover:bg-opacity-80'
+  } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+>
+  <span
+    className={`inline-block h-4 w-4 transform rounded-full transition-all duration-300 shadow-sm ${
+      settings.notificationsEnabled 
+        ? 'translate-x-6 bg-white' // White circle against green background
+        : 'translate-x-1 bg-theme-primary' // Dark circle in dark mode, light circle in light mode  
+    }`}
+  />
+</button>
+
                   </div>
                   
                   {settings.notificationsEnabled && (
@@ -785,7 +788,7 @@ const SettingsPage = () => {
             <Button
               variant="ghost"
               onClick={logout}
-              className="w-full text-theme-secondary hover:text-theme-primary border border-theme-border"
+              className="w-full text-theme-secondary hover:text-theme-primary border border-gray-500"
             >
               Sign Out
             </Button>

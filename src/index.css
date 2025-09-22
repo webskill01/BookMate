@@ -550,6 +550,45 @@
     background-color: var(--color-light-card);
   }
 
+.bg-theme-border {
+  background-color: var(--color-dark-border);
+  transition: background-color 0.3s ease;
+}
+
+html.light .bg-theme-border {
+  background-color: var(--color-light-border);
+}
+
+.bg-theme-primary {
+  background-color: var(--color-dark-text-primary);
+  transition: background-color 0.3s ease;
+}
+
+html.light .bg-theme-primary {
+  background-color: var(--color-light-text-primary);
+}
+
+
+  /* Add to your index.css - Toggle Switch Component */
+@layer components {
+  .toggle-switch-span {
+    background-color: var(--color-dark-text-muted);
+    border: 1px solid var(--color-dark-border);
+    transition: all 0.2s ease-in-out;
+  }
+  
+  html.light .toggle-switch-span {
+    background-color: var(--color-light-text-muted);
+    border-color: var(--color-light-border);
+  }
+  
+  .toggle-switch-span-active {
+    background-color: #FFFFFF;
+    border: none;
+  }
+}
+
+
   /* Theme-aware text utilities */
   .text-theme-primary {
     color: var(--color-dark-text-primary);

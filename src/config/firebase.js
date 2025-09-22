@@ -4,6 +4,7 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getMessaging, isSupported } from 'firebase/messaging';
 
+// Firebase configuration with validation
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -13,22 +14,51 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Validate configuration
+const validateConfig = () => {
+  const requiredFields = [
+    'apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'
+  ];
+  
+  const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
+  
+  if (missingFields.length > 0) {
+    console.error('❌ Missing Firebase configuration:', missingFields);
+    console.error('🔧 Make sure your .env file contains all required VITE_FIREBASE_* variables');
+    throw new Error(`Missing Firebase config: ${missingFields.join(', ')}`);
+  }
+  
+  console.log('✅ Firebase configuration loaded successfully');
+};
 
-// Initialize Firebase Authentication
-export const auth = getAuth(app);
+// Validate and initialize
+validateConfig();
 
-// Initialize Firestore
-export const db = getFirestore(app);
+let app;
+let auth;
+let db;
+let messaging = null;
 
-// Initialize Firebase Messaging
-export let messaging = null;
+try {
+  // Initialize Firebase
+  app = initializeApp(firebaseConfig);
+  
+  // Initialize Firebase Authentication
+  auth = getAuth(app);
+  
+  // Initialize Firestore
+  db = getFirestore(app);
+  
+  console.log('✅ Firebase initialized successfully');
+} catch (error) {
+  console.error('❌ Firebase initialization failed:', error);
+  throw error;
+}
 
+// Initialize Firebase Messaging (optional)
 const initializeMessaging = async () => {
   try {
     const supported = await isSupported();
-    
     if (supported && 'serviceWorker' in navigator) {
       // Register the FCM service worker
       const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
@@ -36,20 +66,20 @@ const initializeMessaging = async () => {
       });
       
       if (import.meta.env.DEV) {
-        console.log('Firebase messaging service worker registered:', registration.scope);
+        console.log('✅ Firebase messaging service worker registered:', registration.scope);
       }
       
       // Initialize messaging
       messaging = getMessaging(app);
       
       if (import.meta.env.DEV) {
-        console.log('Firebase messaging initialized successfully');
+        console.log('✅ Firebase messaging initialized successfully');
       }
     }
   } catch (error) {
     // Silent fail in production
     if (import.meta.env.DEV) {
-      console.error('Firebase messaging initialization failed:', error);
+      console.warn('⚠️ Firebase messaging initialization failed:', error.message);
     }
   }
 };
@@ -57,4 +87,6 @@ const initializeMessaging = async () => {
 // Initialize messaging
 initializeMessaging();
 
+// Export initialized services
+export { auth, db, messaging };
 export default app;

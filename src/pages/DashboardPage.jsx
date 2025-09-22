@@ -90,31 +90,44 @@ const DashboardPage = () => {
 
   // Handle book reissue
   const handleReissue = async (book, event) => {
-    event.stopPropagation();
+  event.stopPropagation();
+  try {
+    setReissuingBook(book.id);
+    setError(null);
     
-    try {
-      setReissuingBook(book.id);
-      setError(null);
-      
-      await bookService.reissueBook(currentUser.uid, book);
-      const userBooks = await bookService.getUserBooks(currentUser.uid);
-      setBooks(userBooks);
-      
-      setMessage({
-        type: 'success',
-        text: `"${book.title}" has been reissued successfully!`
-      });
-      
-      setTimeout(() => setMessage({ type: '', text: '' }), 4000);
-    } catch (error) {
-      setError('Failed to reissue book. Please try again.');
-      if (import.meta.env.DEV) {
-        console.error('Error reissuing book:', error);
-      }
-    } finally {
-      setReissuingBook(null);
+    // Calculate new due date (14 days from today) - same as BookDetailsPage
+    const today = new Date();
+    const newDueDate = new Date(today);
+    newDueDate.setDate(today.getDate() + 14);
+    
+    // Update the existing book with new due date - same method as BookDetailsPage
+    const updatedData = {
+      dueDate: newDueDate.toISOString(),
+      reissuedAt: new Date().toISOString(),
+      reissueCount: (book.reissueCount || 0) + 1
+    };
+    
+    await bookService.updateBook(book.id, updatedData); // <- FIXED: Use updateBook instead
+    
+    // Refresh the books list
+    const userBooks = await bookService.getUserBooks(currentUser.uid);
+    setBooks(userBooks);
+    
+    setMessage({ 
+      type: 'success', 
+      text: `"${book.title}" has been reissued! New due date: ${bookUtils.formatDate(newDueDate.toISOString())}` 
+    });
+    setTimeout(() => setMessage({ type: '', text: '' }), 4000);
+    
+  } catch (error) {
+    setError('Failed to reissue book. Please try again.');
+    if (import.meta.env.DEV) {
+      console.error('Error reissuing book:', error);
     }
-  };
+  } finally {
+    setReissuingBook(null);
+  }
+};
 
   // Handle manual notification check
   const handleManualCheck = async () => {

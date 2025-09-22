@@ -572,7 +572,7 @@ const BookDetailsPage = () => {
 
           {/* UPDATED: Subtle Fine Information Colors */}
           {fine > 0 && (
-            <div className="bg-theme-card border-1 rounded-2xl p-6">
+            <div className="bg-theme-card border border-theme-border rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="bg-red-500/10 p-2 rounded-lg">
                   <IndianRupee className="w-5 h-5 text-red-600" />
@@ -582,7 +582,7 @@ const BookDetailsPage = () => {
                   <p className="text-theme-secondary text-mobile-sm">Overdue fine breakdown</p>
                 </div>
               </div>
-              <div className="bg-red-500/10 border border-red-200/80 rounded-lg p-4">
+              <div className="bg-theme-card border border-red-200/80 rounded-lg p-4">
                 <p className="text-mobile-sm text-red-600">
                   <strong>{Math.abs(daysRemaining)} days overdue</strong> × ₹{book.finePerDay || 1} per day = <strong>₹{fine}</strong>
                 </p>
@@ -592,7 +592,7 @@ const BookDetailsPage = () => {
 
           {/* Action Buttons */}
           {!editing && (
-             <div className="bg-theme-card border border-theme-border rounded-2xl p-6">
+             <div className="bg-theme-card  rounded-2xl p-6">
     <h3 className="text-mobile-lg font-heading font-semibold text-theme-primary mb-4 flex items-center gap-2">
       <div className="bg-green-500/20 p-2 rounded-lg">
       <Zap className="w-5 h-5 text-accent-primary" />
