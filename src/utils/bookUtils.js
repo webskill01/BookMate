@@ -21,30 +21,24 @@ export const bookUtils = {
     });
   },
 
-  // VERCEL-COMPATIBLE: Calculate days remaining with IST timezone
   calculateDaysRemaining: (dueDate) => {
-    // Always calculate in IST regardless of server timezone
-    const now = new Date();
-    
-    // Convert to IST (UTC+5:30)
-    const istOffset = 5.5 * 60; // IST offset in minutes
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const istTime = new Date(utc + (istOffset * 60000));
-    
-    // Set to start of day in IST
-    istTime.setHours(0, 0, 0, 0);
-    
-    // Convert due date to IST
-    const due = new Date(dueDate);
-    const utcDue = due.getTime() + (due.getTimezoneOffset() * 60000);
-    const istDue = new Date(utcDue + (istOffset * 60000));
-    istDue.setHours(0, 0, 0, 0);
-    
-    const diffTime = istDue.getTime() - istTime.getTime();
-    const days = diffTime / (1000 * 60 * 60 * 24);
-    
-    return Math.round(days);
-  },
+  // FIXED: Use built-in timezone conversion
+  const now = new Date();
+  
+  // Get current time in IST consistently
+  const nowIST = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
+  nowIST.setHours(0, 0, 0, 0);
+  
+  // Get due date in IST
+  const due = new Date(dueDate);
+  const dueIST = new Date(due.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
+  dueIST.setHours(0, 0, 0, 0);
+  
+  const diffTime = dueIST.getTime() - nowIST.getTime();
+  const days = diffTime / (1000 * 60 * 60 * 24);
+  
+  return Math.round(days);
+},
 
   // Rest of your existing methods...
   getUserFineRate: async (userId) => {

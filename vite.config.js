@@ -131,6 +131,11 @@ export default defineConfig(({ mode }) => {
             'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/messaging'],
             'ui-vendor': ['lucide-react']
           },
+          server: {
+    headers: {
+      'Content-Security-Policy': "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com"
+    }
+  },
 
           chunkFileNames: (chunkInfo) => {
             const facadeModuleId = chunkInfo.facadeModuleId
