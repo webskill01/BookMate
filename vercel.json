@@ -83,11 +83,7 @@
       ]
     }
   ],
-  "functions": {
-    "src/api/**/*.js": {
-      "runtime": "@vercel/node@2"
-    }
-  },
+  "buildCommand": "npm run build:all",
   "env": {
     "NODE_ENV": "production"
   }

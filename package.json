@@ -19,6 +19,7 @@
     "dev": "vite --port 8000",
     "build": "npm run build:sw && vite build && npm run post-build",
     "build:sw": "node scripts/build-sw.js",
+    "build:all": "npm run build:sw && npm run build",
     "post-build": "node scripts/post-build.js",
     "optimize-build": "node scripts/post-build-optimize.js",
     "preview": "vite preview --port 8001",
