@@ -22,6 +22,7 @@ const DashboardPage = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [checking, setChecking] = useState(false);
   const [sortBy, setSortBy] = useState('due');
+  const [mobileDebugInfo, setMobileDebugInfo] = useState(null);
   
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -129,58 +130,72 @@ const DashboardPage = () => {
   }
 };
 
-  // Handle manual notification check
-  const handleManualCheck = async () => {
-    try {
-        setChecking(true);
-        
-        // First check if notifications are enabled at all
-        const isEnabled = await productionNotificationService.isEnabled(currentUser.uid);
-        
-        if (!isEnabled) {
-            // Try to enable notifications first
-            const enableResult = await productionNotificationService.requestPermission(currentUser.uid);
-            if (!enableResult.success) {
-                setMessage({ 
-                    type: 'error', 
-                    text: 'Please enable notifications in your browser settings to receive reminders.' 
-                });
-                return;
-            }
-        }
-        
-        // Check permission status
-        if (Notification.permission !== 'granted') {
-            setMessage({ 
-                type: 'error', 
-                text: 'Notification permission not granted. Please enable notifications in your browser.' 
-            });
-            return;
-        }
-        
-        // Now proceed with the notification check
-        const result = await productionNotificationService.checkAndSendNotifications(currentUser.uid);
-        
-        if (result.success && result.notificationsSent > 0) {
-            setMessage({ 
-                type: 'success', 
-                text: `Sent ${result.notificationsSent} notification${result.notificationsSent !== 1 ? 's' : ''} for upcoming due dates` 
-            });
-        } else {
-            setMessage({ 
-                type: 'success', 
-                text: 'All books checked - no notifications needed right now' 
-            });
-        }
-        
-        setTimeout(() => setMessage({ type: '', text: '' }), 4000);
-    } catch (error) {
-        console.error('Manual check error:', error);
-        setMessage({ type: 'error', text: 'Failed to check notifications' });
-    } finally {
-        setChecking(false);
+  // Updated handleManualCheck with mobile debug
+const handleManualCheck = async () => {
+  try {
+    setChecking(true);
+    
+    // First check if notifications are enabled at all
+    const isEnabled = await productionNotificationService.isEnabled(currentUser.uid);
+    
+    if (!isEnabled) {
+      const enableResult = await productionNotificationService.requestPermission(currentUser.uid);
+      if (!enableResult.success) {
+        setMessage({ 
+          type: 'error', 
+          text: 'Please enable notifications in your browser settings to receive reminders.' 
+        });
+        return;
+      }
     }
+    
+    if (Notification.permission !== 'granted') {
+      setMessage({ 
+        type: 'error', 
+        text: 'Notification permission not granted. Please enable notifications in your browser.' 
+      });
+      return;
+    }
+    
+    // Get debug info before checking notifications
+    const result = await productionNotificationService.checkAndSendNotifications(currentUser.uid);
+    
+    // MOBILE DEBUG - Set debug state for on-screen display
+    setMobileDebugInfo({
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      userAgent: navigator.userAgent,
+      isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+      totalBooks: result.totalBooks || 0,
+      booksNeedingNotification: result.notificationsNeeded || 0,
+      books: result.books?.map(b => ({
+        title: b.title,
+        dueDate: b.dueDateFormatted,
+        daysRemaining: b.daysRemaining,
+        needsNotification: b.needsNotification
+      })) || []
+    });
+    
+    if (result.success && result.notificationsSent > 0) {
+      setMessage({ 
+        type: 'success', 
+        text: `Sent ${result.notificationsSent} notification${result.notificationsSent !== 1 ? 's' : ''} for upcoming due dates` 
+      });
+    } else {
+      setMessage({ 
+        type: 'success', 
+        text: 'All books checked - no notifications needed right now' 
+      });
+    }
+    
+    setTimeout(() => setMessage({ type: '', text: '' }), 4000);
+  } catch (error) {
+    console.error('Manual check error:', error);
+    setMessage({ type: 'error', text: 'Failed to check notifications' });
+  } finally {
+    setChecking(false);
+  }
 };
+
 
 
   // Sort books based on selected criteria
@@ -259,6 +274,55 @@ const DashboardPage = () => {
     );
   }
 
+  // Add this to your DashboardPage.jsx - MOBILE DEBUG COMPONENT
+const MobileDebug = ({ debugInfo }) => {
+  const [showDebug, setShowDebug] = useState(false);
+  
+  if (!debugInfo || !import.meta.env.DEV) return null;
+  
+  return (
+    <div className="fixed bottom-4 right-4 z-50">
+      <button 
+        onClick={() => setShowDebug(!showDebug)}
+        className="bg-red-500 text-white px-3 py-2 rounded-full text-sm"
+      >
+        🐛 {debugInfo.booksNeedingNotification || 0}
+      </button>
+      
+      {showDebug && (
+        <div className="absolute bottom-12 right-0 w-80 max-h-96 overflow-auto bg-black text-green-400 p-4 rounded text-xs border border-gray-600">
+          <div className="mb-2 font-bold">Mobile Debug Info:</div>
+          <div>Timezone: {debugInfo.timezone}</div>
+          <div>User Agent: {debugInfo.userAgent?.substring(0, 30)}...</div>
+          <div>Is Mobile: {debugInfo.isMobile ? 'YES' : 'NO'}</div>
+          <div>Total Books: {debugInfo.totalBooks}</div>
+          <div>Books Needing Notifications: {debugInfo.booksNeedingNotification}</div>
+          
+          <div className="mt-2 border-t border-gray-600 pt-2">
+            <div className="font-bold">Books Analysis:</div>
+            {debugInfo.books?.map((book, idx) => (
+              <div key={idx} className="mt-1 p-1 border border-gray-700 rounded">
+                <div>📖 {book.title}</div>
+                <div>Due: {book.dueDate}</div>
+                <div>Days: {book.daysRemaining}</div>
+                <div>Notify: {book.needsNotification ? '✅' : '❌'}</div>
+              </div>
+            ))}
+          </div>
+          
+          <button 
+            onClick={() => setShowDebug(false)}
+            className="mt-2 bg-gray-600 text-white px-2 py-1 rounded text-xs"
+          >
+            Close
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
   return (
     <div className="min-h-screen bg-theme-bg overflow-x-hidden">
       <div className="layout-container pb-6">
@@ -299,7 +363,8 @@ const DashboardPage = () => {
               </Button>
             </div>
           </div>
-
+           <MobileDebug debugInfo={mobileDebugInfo} />
+           
           {/* Stats Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-500/15 dark:to-blue-900/10 border border-blue-200/50 dark:border-blue-700/30 rounded-xl p-3 sm:p-4">
