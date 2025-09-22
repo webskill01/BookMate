@@ -438,10 +438,31 @@ async sendImmediateBookNotification(book) {
   }
 
   async isEnabled(userId) {
-  // TEMPORARY: Force enable for testing
-  console.log('🔍 FORCING NOTIFICATIONS ENABLED FOR DEBUG');
-  return true;
+  console.log('🔍 DEBUG isEnabled() called for:', userId);
+  
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    if (userDoc.exists()) {
+      const firestoreEnabled = userDoc.data().notificationsEnabled || false;
+      console.log('🔍 Firestore notificationsEnabled:', firestoreEnabled);
+      console.log('🔍 Full user doc data:', userDoc.data());
+      return firestoreEnabled;
+    } else {
+      console.log('🔍 User document does not exist');
+    }
+  } catch (error) {
+    console.log('🔍 Firestore check failed:', error);
+  }
+
+  const settings = localStorage.getItem(`production_notifications_${userId}`);
+  console.log('🔍 localStorage settings:', settings);
+  const localEnabled = settings ? JSON.parse(settings).enabled : false;
+  console.log('🔍 localStorage enabled:', localEnabled);
+  
+  return localEnabled;
 }
+
 
 }
 
