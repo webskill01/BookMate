@@ -22,7 +22,7 @@ const DashboardPage = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [checking, setChecking] = useState(false);
   const [sortBy, setSortBy] = useState('due');
-  const [mobileDebugInfo, setMobileDebugInfo] = useState(null);
+  const [debugVisible, setDebugVisible] = useState(false);
   
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -274,53 +274,6 @@ const handleManualCheck = async () => {
     );
   }
 
-  // Add this to your DashboardPage.jsx - MOBILE DEBUG COMPONENT
-const MobileDebug = ({ debugInfo }) => {
-  const [showDebug, setShowDebug] = useState(false);
-  
-  if (!debugInfo || !import.meta.env.DEV) return null;
-  
-  return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <button 
-        onClick={() => setShowDebug(!showDebug)}
-        className="bg-red-500 text-white px-3 py-2 rounded-full text-sm"
-      >
-        🐛 {debugInfo.booksNeedingNotification || 0}
-      </button>
-      
-      {showDebug && (
-        <div className="absolute bottom-12 right-0 w-80 max-h-96 overflow-auto bg-black text-green-400 p-4 rounded text-xs border border-gray-600">
-          <div className="mb-2 font-bold">Mobile Debug Info:</div>
-          <div>Timezone: {debugInfo.timezone}</div>
-          <div>User Agent: {debugInfo.userAgent?.substring(0, 30)}...</div>
-          <div>Is Mobile: {debugInfo.isMobile ? 'YES' : 'NO'}</div>
-          <div>Total Books: {debugInfo.totalBooks}</div>
-          <div>Books Needing Notifications: {debugInfo.booksNeedingNotification}</div>
-          
-          <div className="mt-2 border-t border-gray-600 pt-2">
-            <div className="font-bold">Books Analysis:</div>
-            {debugInfo.books?.map((book, idx) => (
-              <div key={idx} className="mt-1 p-1 border border-gray-700 rounded">
-                <div>📖 {book.title}</div>
-                <div>Due: {book.dueDate}</div>
-                <div>Days: {book.daysRemaining}</div>
-                <div>Notify: {book.needsNotification ? '✅' : '❌'}</div>
-              </div>
-            ))}
-          </div>
-          
-          <button 
-            onClick={() => setShowDebug(false)}
-            className="mt-2 bg-gray-600 text-white px-2 py-1 rounded text-xs"
-          >
-            Close
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
 
 
   return (
@@ -352,7 +305,40 @@ const MobileDebug = ({ debugInfo }) => {
               >
                 Check Notifications
               </Button>
-              
+              <button 
+  onClick={() => setDebugVisible(!debugVisible)}
+  className="px-3 py-2 bg-red-600 text-white rounded text-sm ml-2"
+>
+  🐛 Debug
+</button>
+{debugVisible && (
+  <div className="fixed top-0 left-0 w-full bg-black text-green-400 p-4 text-xs z-50 max-h-96 overflow-auto">
+    <div className="font-bold mb-2">Mobile Debug Info:</div>
+    <div>Current Time: {new Date().toString()}</div>
+    <div>Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}</div>
+    <div>Books Count: {books.length}</div>
+    
+    {books.map((book, idx) => {
+      const daysRemaining = bookUtils.calculateDaysRemaining(book.dueDate);
+      const shouldNotify = [3,1,0].includes(daysRemaining) || daysRemaining < 0;
+      return (
+        <div key={idx} className="border-t border-gray-600 mt-2 pt-2">
+          <div className="text-yellow-400">📖 {book.title}</div>
+          <div>Due Date: {book.dueDate}</div>
+          <div>Days Remaining: <span className="text-white font-bold">{daysRemaining}</span></div>
+          <div>Should Notify: {shouldNotify ? '✅ YES' : '❌ NO'}</div>
+        </div>
+      );
+    })}
+    
+    <button 
+      onClick={() => setDebugVisible(false)} 
+      className="mt-4 bg-gray-600 px-3 py-1 rounded"
+    >
+      Close Debug
+    </button>
+  </div>
+)}
               <Button
                 onClick={() => navigate('/add-book')}
                 icon={Plus}
@@ -362,7 +348,6 @@ const MobileDebug = ({ debugInfo }) => {
                 Add Book
               </Button>
             </div>
-           <MobileDebug debugInfo={mobileDebugInfo} />
           </div>
 
           {/* Stats Cards */}

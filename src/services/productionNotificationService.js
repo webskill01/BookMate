@@ -174,48 +174,34 @@ class ProductionNotificationService {
     }
   }
 
-  // Books with due dates
-  async getUserBooksWithDueDates(userId) {
-    try {
-      const booksRef = collection(db, 'books');
-      const q = query(booksRef, where('userId', '==', userId));
-      const querySnapshot = await getDocs(q);
-
-      const books = [];
-
-      querySnapshot.forEach((docSnap) => {
-        const bookData = docSnap.data();
-        if (bookData.dueDate && (!bookData.status || bookData.status !== 'returned')) {
-          let dueDate = bookData.dueDate.toDate ? bookData.dueDate.toDate() : new Date(bookData.dueDate);
-const daysRemaining = bookUtils.calculateDaysRemaining(dueDate); // Remove .toISOString()
-const currentFine = bookUtils.calculateFineSync(dueDate, bookData.finePerDay || 1); // Remove .toISOString()
-console.log('📱 TIMEZONE DEBUG:', {
-  bookTitle: bookData.title,
-  originalDueDate: bookData.dueDate,
-  processedDueDate: dueDate,
-  daysRemaining,
-  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  shouldNotify: this.shouldSendNotification(daysRemaining)
-});
-
-          books.push({
-            id: docSnap.id,
-            ...bookData,
-            dueDate: dueDate.toISOString(),
-            dueDateFormatted: bookUtils.formatDate(dueDate.toISOString()),
-            daysRemaining,
-            currentFine,
-            needsNotification: this.shouldSendNotification(daysRemaining)
-          });
-        }
-      });
-
-      return books.sort((a, b) => a.daysRemaining - b.daysRemaining);
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('Error fetching books:', error);
-      return [];
-    }
+  // REPLACE getUserBooksWithDueDates in productionNotificationService.js
+async getUserBooksWithDueDates(userId) {
+  try {
+    // Use the SAME method that works in your dashboard
+    const books = await bookService.getUserBooks(userId);
+    
+    return books.map(book => {
+      // Use IDENTICAL logic to what your UI uses - no timestamp processing!
+      const daysRemaining = bookUtils.calculateDaysRemaining(book.dueDate);
+      const currentFine = bookUtils.calculateFineSync(book.dueDate, book.finePerDay || 1);
+      const statusInfo = bookUtils.getStatusInfo(daysRemaining, currentFine);
+      const needsNotification = this.shouldSendNotification(daysRemaining);
+      
+      return {
+        ...book,
+        daysRemaining,
+        needsNotification,
+        dueDateFormatted: bookUtils.formatDate(book.dueDate),
+        fine: currentFine,
+        status: statusInfo
+      };
+    });
+  } catch (error) {
+    console.error('Error getting user books with due dates:', error);
+    return [];
   }
+}
+
 
   shouldSendNotification(daysRemaining) {
     return daysRemaining === 3 || daysRemaining === 1 || daysRemaining === 0 || daysRemaining < 0;
