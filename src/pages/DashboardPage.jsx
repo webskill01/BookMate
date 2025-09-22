@@ -22,7 +22,6 @@ const DashboardPage = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [checking, setChecking] = useState(false);
   const [sortBy, setSortBy] = useState('due');
-  const [debugVisible, setDebugVisible] = useState(false);
   
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -159,21 +158,7 @@ const handleManualCheck = async () => {
     
     // Get debug info before checking notifications
     const result = await productionNotificationService.checkAndSendNotifications(currentUser.uid);
-    
-    // MOBILE DEBUG - Set debug state for on-screen display
-    setMobileDebugInfo({
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      userAgent: navigator.userAgent,
-      isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-      totalBooks: result.totalBooks || 0,
-      booksNeedingNotification: result.notificationsNeeded || 0,
-      books: result.books?.map(b => ({
-        title: b.title,
-        dueDate: b.dueDateFormatted,
-        daysRemaining: b.daysRemaining,
-        needsNotification: b.needsNotification
-      })) || []
-    });
+
     
     if (result.success && result.notificationsSent > 0) {
       setMessage({ 
@@ -305,40 +290,7 @@ const handleManualCheck = async () => {
               >
                 Check Notifications
               </Button>
-              <button 
-  onClick={() => setDebugVisible(!debugVisible)}
-  className="px-3 py-2 bg-red-600 text-white rounded text-sm ml-2"
->
-  🐛 Debug
-</button>
-{debugVisible && (
-  <div className="fixed top-0 left-0 w-full bg-black text-green-400 p-4 text-xs z-50 max-h-96 overflow-auto">
-    <div className="font-bold mb-2">Mobile Debug Info:</div>
-    <div>Current Time: {new Date().toString()}</div>
-    <div>Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}</div>
-    <div>Books Count: {books.length}</div>
-    
-    {books.map((book, idx) => {
-      const daysRemaining = bookUtils.calculateDaysRemaining(book.dueDate);
-      const shouldNotify = [3,1,0].includes(daysRemaining) || daysRemaining < 0;
-      return (
-        <div key={idx} className="border-t border-gray-600 mt-2 pt-2">
-          <div className="text-yellow-400">📖 {book.title}</div>
-          <div>Due Date: {book.dueDate}</div>
-          <div>Days Remaining: <span className="text-white font-bold">{daysRemaining}</span></div>
-          <div>Should Notify: {shouldNotify ? '✅ YES' : '❌ NO'}</div>
-        </div>
-      );
-    })}
-    
-    <button 
-      onClick={() => setDebugVisible(false)} 
-      className="mt-4 bg-gray-600 px-3 py-1 rounded"
-    >
-      Close Debug
-    </button>
-  </div>
-)}
+              
               <Button
                 onClick={() => navigate('/add-book')}
                 icon={Plus}

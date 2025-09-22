@@ -39,7 +39,7 @@ class ProductionNotificationService {
         // Continue without FCM - use browser notifications
       }
     }
-    
+
       // Ensure user books are fetched (used elsewhere in notifications)
       try {
         await bookService.getUserBooks(userId);
@@ -288,8 +288,8 @@ async getUserBooksWithDueDates(userId) {
     }
   }
 
-  // Immediate book notification
- // Update sendImmediateBookNotification in productionNotificationService.js
+  
+// FIXED VERSION - Replace the entire sendImmediateBookNotification function:
 async sendImmediateBookNotification(book) {
   try {
     // Ensure book data is complete
@@ -313,7 +313,7 @@ async sendImmediateBookNotification(book) {
       body = `Due in ${book.daysRemaining} days. Plan your return!`;
     }
 
-    // Create notification options with safe data
+    // Create notification options with FIXED actions array
     const notificationOptions = {
       body,
       icon: '/icons/icon-192x192.png',
@@ -327,6 +327,7 @@ async sendImmediateBookNotification(book) {
         fine: book.fine || 0
       },
       requireInteraction: true,
+      // FIXED: Proper actions array syntax
       actions: [
         {
           action: 'view',
@@ -356,7 +357,6 @@ async sendImmediateBookNotification(book) {
     return false;
   }
 }
-
 
   async updateLastCheckTime(userId) {
     try {
