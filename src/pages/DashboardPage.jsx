@@ -362,9 +362,9 @@ const MobileDebug = ({ debugInfo }) => {
                 Add Book
               </Button>
             </div>
-          </div>
            <MobileDebug debugInfo={mobileDebugInfo} />
-           
+          </div>
+
           {/* Stats Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-500/15 dark:to-blue-900/10 border border-blue-200/50 dark:border-blue-700/30 rounded-xl p-3 sm:p-4">
