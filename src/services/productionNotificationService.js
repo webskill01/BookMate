@@ -438,19 +438,11 @@ async sendImmediateBookNotification(book) {
   }
 
   async isEnabled(userId) {
-    try {
-      const userRef = doc(db, 'users', userId);
-      const userDoc = await getDoc(userRef);
-      if (userDoc.exists()) {
-        return userDoc.data().notificationsEnabled || false;
-      }
-    } catch {
-      if (import.meta.env.DEV) console.warn('Firestore check failed, using localStorage');
-    }
+  // TEMPORARY: Force enable for testing
+  console.log('🔍 FORCING NOTIFICATIONS ENABLED FOR DEBUG');
+  return true;
+}
 
-    const settings = localStorage.getItem(`production_notifications_${userId}`);
-    return settings ? JSON.parse(settings).enabled : false;
-  }
 }
 
 export const productionNotificationService = new ProductionNotificationService();
