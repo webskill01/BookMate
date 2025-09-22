@@ -289,10 +289,8 @@ async getUserBooksWithDueDates(userId) {
   }
 
   
-// FIXED VERSION - Replace the entire sendImmediateBookNotification function:
 async sendImmediateBookNotification(book) {
   try {
-    // Ensure book data is complete
     if (!book || !book.title) {
       console.error('Invalid book data:', book);
       return false;
@@ -301,7 +299,6 @@ async sendImmediateBookNotification(book) {
     const title = `📚 BookMate: ${book.title}`;
     let body = '';
     
-    // Safe status check
     if (book.daysRemaining < 0) {
       const daysOverdue = Math.abs(book.daysRemaining);
       body = `Overdue by ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''}! Fine: ₹${book.fine || 0}`;
@@ -313,39 +310,51 @@ async sendImmediateBookNotification(book) {
       body = `Due in ${book.daysRemaining} days. Plan your return!`;
     }
 
-    // Create notification options with FIXED actions array
-    const notificationOptions = {
-      body,
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
-      tag: `book-${book.id || 'unknown'}`,
-      data: {
-        bookId: book.id || null,
-        bookTitle: book.title || 'Unknown Book',
-        dueDate: book.dueDateFormatted || book.dueDate,
-        daysRemaining: book.daysRemaining,
-        fine: book.fine || 0
-      },
-      requireInteraction: true,
-      // FIXED: Proper actions array syntax
-      actions: [
-        {
-          action: 'view',
-          title: 'View Book'
-        }
-      ]
-    };
-
-    // Try browser notification first
+    // DESKTOP: Browser notification (limited features)
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, notificationOptions);
+      console.log('Creating browser notification:', title);
+      const notification = new Notification(title, {
+        body,
+        icon: '/icons/icon-192x192.png',
+        tag: `book-${book.id || 'unknown'}`
+        // NO actions, requireInteraction, or badge for browser notifications!
+      });
+      
+      // Manual click handler for desktop
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+      
+      // Auto close after 8 seconds
+      setTimeout(() => notification.close(), 8000);
       return true;
     }
 
-    // Fallback for mobile - try service worker notification
+    // MOBILE: Service Worker notification (full features)
     if ('serviceWorker' in navigator) {
+      console.log('Creating service worker notification:', title);
       const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification(title, notificationOptions);
+      await registration.showNotification(title, {
+        body,
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-72x72.png',
+        tag: `book-${book.id || 'unknown'}`,
+        data: {
+          bookId: book.id || null,
+          bookTitle: book.title || 'Unknown Book',
+          dueDate: book.dueDateFormatted || book.dueDate,
+          daysRemaining: book.daysRemaining,
+          fine: book.fine || 0
+        },
+        requireInteraction: true,
+        actions: [
+          {
+            action: 'view',
+            title: 'View Book'
+          }
+        ]
+      });
       return true;
     }
 
@@ -357,6 +366,7 @@ async sendImmediateBookNotification(book) {
     return false;
   }
 }
+
 
   async updateLastCheckTime(userId) {
     try {
