@@ -22,28 +22,20 @@ export const bookUtils = {
   },
 
   calculateDaysRemaining: (dueDate) => {
-  // CORRECT: Use proper UTC manipulation
-  const now = new Date();
+  // ULTRA-SIMPLE: Force both dates to IST using locale methods
+  const options = { timeZone: 'Asia/Kolkata' };
+  const today = new Date().toLocaleDateString('en-CA', options); // YYYY-MM-DD in IST
+  const due = new Date(dueDate).toLocaleDateString('en-CA', options);
   
-  // Convert current time to IST (UTC + 5:30)
-  const istOffset = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds
-  const utcNow = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 
-                         now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
-  const istNow = new Date(utcNow.getTime() + istOffset);
-  istNow.setHours(0, 0, 0, 0); // Start of day in IST
+  const todayDate = new Date(today + 'T00:00:00');
+  const dueDateTime = new Date(due + 'T00:00:00');
   
-  // Convert due date to IST  
-  const due = new Date(dueDate);
-  const utcDue = new Date(due.getUTCFullYear(), due.getUTCMonth(), due.getUTCDate(),
-                         due.getUTCHours(), due.getUTCMinutes(), due.getUTCSeconds());
-  const istDue = new Date(utcDue.getTime() + istOffset);
-  istDue.setHours(0, 0, 0, 0); // Start of day in IST
-  
-  const diffTime = istDue.getTime() - istNow.getTime();
+  const diffTime = dueDateTime.getTime() - todayDate.getTime();
   const days = diffTime / (1000 * 60 * 60 * 24);
   
   return Math.round(days);
 },
+
 
   // Rest of your existing methods...
   getUserFineRate: async (userId) => {

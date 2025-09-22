@@ -132,31 +132,56 @@ const DashboardPage = () => {
   // Handle manual notification check
   const handleManualCheck = async () => {
     try {
-      setChecking(true);
-      const result = await productionNotificationService.checkAndSendNotifications(currentUser.uid);
-      
-      if (result.success && result.notificationsSent > 0) {
-        setMessage({
-          type: 'success',
-          text: `✓ Sent ${result.notificationsSent} notification${result.notificationsSent > 1 ? 's' : ''} for upcoming due dates`
-        });
-      } else {
-        setMessage({
-          type: 'success',
-          text: '✓ All books checked - no notifications needed right now'
-        });
-      }
-      
-      setTimeout(() => setMessage({ type: '', text: '' }), 4000);
+        setChecking(true);
+        
+        // First check if notifications are enabled at all
+        const isEnabled = await productionNotificationService.isEnabled(currentUser.uid);
+        
+        if (!isEnabled) {
+            // Try to enable notifications first
+            const enableResult = await productionNotificationService.requestPermission(currentUser.uid);
+            if (!enableResult.success) {
+                setMessage({ 
+                    type: 'error', 
+                    text: 'Please enable notifications in your browser settings to receive reminders.' 
+                });
+                return;
+            }
+        }
+        
+        // Check permission status
+        if (Notification.permission !== 'granted') {
+            setMessage({ 
+                type: 'error', 
+                text: 'Notification permission not granted. Please enable notifications in your browser.' 
+            });
+            return;
+        }
+        
+        // Now proceed with the notification check
+        const result = await productionNotificationService.checkAndSendNotifications(currentUser.uid);
+        
+        if (result.success && result.notificationsSent > 0) {
+            setMessage({ 
+                type: 'success', 
+                text: `Sent ${result.notificationsSent} notification${result.notificationsSent !== 1 ? 's' : ''} for upcoming due dates` 
+            });
+        } else {
+            setMessage({ 
+                type: 'success', 
+                text: 'All books checked - no notifications needed right now' 
+            });
+        }
+        
+        setTimeout(() => setMessage({ type: '', text: '' }), 4000);
     } catch (error) {
-      setMessage({
-        type: 'error',
-        text: 'Failed to check notifications'
-      });
+        console.error('Manual check error:', error);
+        setMessage({ type: 'error', text: 'Failed to check notifications' });
     } finally {
-      setChecking(false);
+        setChecking(false);
     }
-  };
+};
+
 
   // Sort books based on selected criteria
   const sortBooks = (books, criteria) => {
