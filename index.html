@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Basic meta tags -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- SEO and Social Meta -->
+  <title>BookMate - Smart Library Management</title>
+  <meta name="description" content="Track your library books, get due date reminders, and never pay fines again. A smart PWA for students and book lovers." />
+  <meta name="keywords" content="library management, book tracker, due date reminders, student app, PWA, notifications" />
+  <meta name="author" content="BookMate Team" />
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="BookMate - Smart Library Management" />
+  <meta property="og:description" content="Track your library books and never miss a due date with smart notifications." />
+  <meta property="og:image" content="/icons/icon-512x512.png" />
+  <meta property="og:url" content="https://book-mate-delta.vercel.app" />
+  <meta property="og:site_name" content="BookMate" />
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:title" content="BookMate - Smart Library Management" />
+  <meta property="twitter:description" content="Track your library books and never miss a due date with smart notifications." />
+  <meta property="twitter:image" content="/icons/icon-512x512.png" />
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#16a34a" />
+  <meta name="background-color" content="#000000" />
+  <meta name="display" content="standalone" />
+  <meta name="orientation" content="portrait" />
+  
+  <!-- iOS PWA Meta Tags -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="BookMate" />
+  
+  <!-- iOS Icons -->
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
+  
+  <!-- Standard Icons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+  <link rel="shortcut icon" href="/icons/favicon-32x32.png" />
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json" />
+  
+  <!-- Preconnect to external domains for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="dns-prefetch" href="https://firebase.googleapis.com" />
+  <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+  
+  <!-- Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: https: blob:;
+    connect-src 'self' ws://localhost:* wss://localhost:* https://firebase.googleapis.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://fcm.googleapis.com wss://s-usc1c-nss-2087.firebaseio.com;
+    worker-src 'self' blob:;
+    frame-src 'self' https://*.firebaseapp.com https://accounts.google.com;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+  " />
+  
+  <!-- Module Preload -->
+  <link rel="modulepreload" href="/src/main.jsx" />
+  
+  <!-- FIXED: Isolated Loading Screen Styles -->
+    <!-- FIXED: Properly Centered Loading Screen Styles -->
+  <style>
+    /* Only apply reset to loading screen elements */
+    #loading-screen,
+    #loading-screen *,
+    #loading-screen *::before,
+    #loading-screen *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      overflow: hidden;
+    }
+    
+    /* Animated Background Gradient */
+    #loading-screen::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(34, 197, 94, 0.1) 50%,
+        transparent 70%
+      );
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+      100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    }
+    
+    #loading-content {
+      text-align: center;
+      color: white;
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+    }
+    
+    /* FIXED: Properly Centered App Icon */
+    .bookmate-loading-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px auto;
+      position: relative;
+      background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+      border-radius: 20px;
+      box-shadow: 
+        0 10px 30px rgba(34, 197, 94, 0.3),
+        0 0 0 1px rgba(34, 197, 94, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: iconPulse 2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    
+    /* Fallback SVG BookMark Icon */
+    .bookmate-loading-icon svg {
+      width: 40px;
+      height: 40px;
+      color: white;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+      display: block;
+    }
+    
+    /* If app icon exists, hide SVG and center image */
+    .bookmate-loading-icon img {
+      width: 60px;
+      height: 60px;
+      border-radius: 12px;
+      display: block;
+      object-fit: contain;
+    }
+    
+    .bookmate-loading-icon img + svg {
+      display: none;
+    }
+    
+    @keyframes iconPulse {
+      0% { 
+        transform: scale(1);
+        box-shadow: 
+          0 10px 30px rgba(34, 197, 94, 0.3),
+          0 0 0 1px rgba(34, 197, 94, 0.2);
+      }
+      50% { 
+        transform: scale(1.05);
+        box-shadow: 
+          0 15px 40px rgba(34, 197, 94, 0.4),
+          0 0 0 1px rgba(34, 197, 94, 0.3);
+      }
+      100% { 
+        transform: scale(1);
+        box-shadow: 
+          0 10px 30px rgba(34, 197, 94, 0.3),
+          0 0 0 1px rgba(34, 197, 94, 0.2);
+      }
+    }
+    
+    /* FIXED: Perfectly Centered Loading Spinner */
+    .bookmate-loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(34, 197, 94, 0.2);
+      border-radius: 50%;
+      border-top-color: #22c55e;
+      border-right-color: #16a34a;
+      animation: spin 1.2s linear infinite;
+      margin: 0 auto 24px auto;
+      position: relative;
+      flex-shrink: 0;
+      left: 0;
+      right: 0;
+    }
+    
+    .bookmate-loading-spinner::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      bottom: 2px;
+      border: 2px solid transparent;
+      border-top-color: rgba(34, 197, 94, 0.6);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite reverse;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Typography - All Centered */
+    .bookmate-loading-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 auto 8px auto;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+      text-align: center;
+      display: block;
+    }
+    
+    .bookmate-loading-subtitle {
+      font-size: 16px;
+      font-weight: 500;
+      color: #22c55e;
+      margin: 0 auto 16px auto;
+      opacity: 0.9;
+      text-align: center;
+      display: block;
+    }
+    
+    .bookmate-loading-text {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.7);
+      animation: fadeInOut 2s ease-in-out infinite;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+    }
+    
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; }
+    }
+    
+    /* FIXED: Centered Loading Progress Dots */
+    .bookmate-loading-dots {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      margin-left: 4px;
+    }
+    
+    .bookmate-loading-dots span {
+      width: 4px;
+      height: 4px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: dotPulse 1.4s ease-in-out infinite;
+      display: block;
+    }
+    
+    .bookmate-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .bookmate-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+    
+    @keyframes dotPulse {
+      0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+      30% { opacity: 1; transform: scale(1.2); }
+    }
+    
+    /* Responsive Design with Better Centering */
+    @media (max-width: 480px) {
+      #loading-content {
+        padding: 15px;
+      }
+      
+      .bookmate-loading-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 16px;
+        margin: 0 auto 20px auto;
+      }
+      
+      .bookmate-loading-icon svg {
+        width: 36px;
+        height: 36px;
+      }
+      
+      .bookmate-loading-icon img {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+      }
+      
+      .bookmate-loading-spinner {
+        width: 45px;
+        height: 45px;
+        margin: 0 auto 20px auto;
+      }
+      
+      .bookmate-loading-title {
+        font-size: 24px;
+        margin: 0 auto 6px auto;
+      }
+      
+      .bookmate-loading-subtitle {
+        font-size: 14px;
+        margin: 0 auto 14px auto;
+      }
+    }
+    
+    /* Smooth Fade Out */
+    .bookmate-loading-fade-out {
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Force centering for all flex children */
+    #loading-content > * {
+      align-self: center;
+    }
+  </style>
+
+  <!-- Suppress browser extension errors -->
+  <script>
+    const originalError = console.error;
+    console.error = function(...args) {
+      const message = args.join(' ');
+      if (message.includes('Could not establish connection') || 
+          message.includes('Receiving end does not exist') ||
+          message.includes('violates the following Content Security Policy')) {
+        return;
+      }
+      return originalError.apply(this, args);
+    };
+  </script>
+</head>
+<body>
+  <!-- BookMate Loading Screen -->
+  <div id="loading-screen">
+    <div id="loading-content">
+      <!-- App Icon with Fallback -->
+      <div class="bookmate-loading-icon">
+        <img src="/icons/icon-192x192.png" alt="BookMate" onerror="this.style.display='none'" />
+        <!-- Fallback SVG BookMark Icon -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20l-5.5-6-5.5 6V2z"></path>
+        </svg>
+      </div>
+      
+      <!-- Loading Spinner -->
+      <div class="bookmate-loading-spinner"></div>
+      
+      <!-- App Title -->
+      <div class="bookmate-loading-title">BookMate</div>
+      <div class="bookmate-loading-subtitle">Smart Library Management</div>
+      
+      <!-- Loading Text -->
+      <div class="bookmate-loading-text">
+        Loading your library
+        <span class="bookmate-loading-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- React app root -->
+  <div id="root"></div>
+  
+  <!-- Main app script -->
+  <script type="module" src="/src/main.jsx"></script>
+  
+  <!-- Enhanced Loading Screen Removal -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const loadingScreen = document.getElementById('loading-screen');
+      
+      const checkAppReady = () => {
+        const rootElement = document.getElementById('root');
+        if (rootElement && rootElement.children.length > 0) {
+          // Add fade out class
+          loadingScreen.classList.add('bookmate-loading-fade-out');
+          
+          // Remove element after animation
+          setTimeout(() => {
+            if (loadingScreen && loadingScreen.parentNode) {
+              loadingScreen.remove();
+            }
+          }, 500);
+        } else {
+          setTimeout(checkAppReady, 100);
+        }
+      };
+      
+      // Start checking after minimum display time
+      setTimeout(checkAppReady, 800);
+      
+      // Fallback: always remove after 4 seconds
+      setTimeout(() => {
+        if (loadingScreen && loadingScreen.parentNode) {
+          loadingScreen.classList.add('bookmate-loading-fade-out');
+          setTimeout(() => loadingScreen.remove(), 500);
+        }
+      }, 4000);
+    });
+  </script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+          .then(function(registration) {
+            // Success
+          })
+          .catch(function(registrationError) {
+            // Silent fail in production
+          });
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGradient" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#66BB6A;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#388E3C;stop-opacity:1" />
+    </radialGradient>
+
+    <!-- Book Cover Gradient -->
+    <linearGradient id="bookCover" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#fafafa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f0f0f0;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Book Spine Gradient -->
+    <linearGradient id="bookSpine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2E7D32;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#66BB6A;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Book Pages Gradient -->
+    <linearGradient id="bookPages" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fefefe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f5f5f5;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Notification Gradient -->
+    <radialGradient id="notificationGradient" cx="50%" cy="30%">
+      <stop offset="0%" style="stop-color:#FF6B6B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF5252;stop-opacity:1" />
+    </radialGradient>
+
+    <!-- Calendar Gradient -->
+    <linearGradient id="calendarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#42A5F5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1976D2;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Drop Shadow Filter -->
+    <filter id="bookShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
+      <feOffset dx="4" dy="12" result="offset"/>
+      <feFlood flood-color="#000000" flood-opacity="0.25"/>
+      <feComposite in2="offset" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Soft Glow Filter -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Inner Shadow -->
+    <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feOffset dx="0" dy="2"/>
+      <feGaussianBlur stdDeviation="2" result="offset-blur"/>
+      <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
+      <feFlood flood-color="black" flood-opacity="0.1" result="color"/>
+      <feComposite operator="in" in="color" in2="inverse" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Main Background Circle -->
+  <circle cx="256" cy="256" r="256" fill="url(#bgGradient)"/>
+
+  <!-- Background Pattern (subtle) -->
+  <circle cx="256" cy="256" r="240" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <circle cx="256" cy="256" r="220" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+
+  <!-- Book Container (3D Perspective) -->
+  <g transform="translate(256, 256) rotate(-5) translate(-256, -256)">
+    
+    <!-- Book Shadow (underneath) -->
+    <ellipse cx="270" cy="420" rx="120" ry="20" fill="rgba(0,0,0,0.2)" opacity="0.6"/>
+
+    <!-- Main Book Structure -->
+    <g filter="url(#bookShadow)">
+      
+      <!-- Book Pages (stacked effect) -->
+      <rect x="160" y="140" width="200" height="280" rx="8" ry="8" fill="url(#bookPages)" transform="translate(2, 2)"/>
+      <rect x="160" y="140" width="200" height="280" rx="8" ry="8" fill="url(#bookPages)" transform="translate(1, 1)"/>
+      
+      <!-- Main Book Cover -->
+      <rect x="160" y="140" width="200" height="280" rx="12" ry="12" fill="url(#bookCover)" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>
+      
+      <!-- Book Spine (left side with 3D effect) -->
+      <path d="M 160 152 L 160 408 Q 160 420 172 420 L 180 420 L 180 152 Q 180 140 172 140 Q 160 140 160 152 Z" 
+            fill="url(#bookSpine)"/>
+      
+      <!-- Spine Highlight -->
+      <rect x="165" y="150" width="2" height="260" rx="1" fill="rgba(255,255,255,0.4)"/>
+      
+      <!-- Book Cover Details -->
+      <g filter="url(#innerShadow)">
+        <!-- Title Area -->
+        <rect x="200" y="170" width="120" height="8" rx="4" fill="#4CAF50"/>
+        <rect x="200" y="185" width="100" height="4" rx="2" fill="#81C784" opacity="0.8"/>
+        
+        <!-- Content Lines -->
+        <rect x="200" y="210" width="140" height="2" rx="1" fill="rgba(0,0,0,0.3)"/>
+        <rect x="200" y="220" width="130" height="2" rx="1" fill="rgba(0,0,0,0.2)"/>
+        <rect x="200" y="230" width="120" height="2" rx="1" fill="rgba(0,0,0,0.2)"/>
+        <rect x="200" y="240" width="100" height="2" rx="1" fill="rgba(0,0,0,0.2)"/>
+        
+        <!-- Due Date Section -->
+        <rect x="200" y="270" width="80" height="3" rx="1.5" fill="#FF9800"/>
+        <rect x="200" y="280" width="60" height="2" rx="1" fill="#FFB74D"/>
+        
+        <!-- Fine Section -->
+        <rect x="200" y="310" width="90" height="3" rx="1.5" fill="#FF5252"/>
+        <rect x="200" y="320" width="70" height="2" rx="1" fill="#FF7979"/>
+      </g>
+      
+      <!-- Book Corner Fold Effect -->
+      <path d="M 340 160 L 340 140 Q 350 140 360 150 L 360 170 Z" 
+            fill="rgba(0,0,0,0.1)"/>
+      <path d="M 340 160 L 360 160 L 360 170 L 350 160 Z" 
+            fill="rgba(255,255,255,0.3)"/>
+    </g>
+  </g>
+
+  <!-- Floating Elements -->
+  
+  <!-- Notification Badge (top right) -->
+  <g transform="translate(400, 120)">
+    <circle cx="0" cy="0" r="35" fill="url(#notificationGradient)" filter="url(#glow)"/>
+    <circle cx="0" cy="0" r="30" fill="rgba(255,255,255,0.2)"/>
+    <circle cx="0" cy="0" r="25" fill="rgba(255,255,255,0.1)"/>
+    
+    <!-- Rupee Symbol -->
+    <text x="0" y="8" text-anchor="middle" fill="white" 
+          font-family="Arial Black, sans-serif" font-size="28" font-weight="900">₹</text>
+    
+    <!-- Shine Effect -->
+    <circle cx="-8" cy="-8" r="6" fill="rgba(255,255,255,0.6)"/>
+  </g>
+
+  <!-- Calendar Widget (bottom right) -->
+  <g transform="translate(380, 380)">
+    <rect x="-25" y="-25" width="50" height="50" rx="8" ry="8" 
+          fill="url(#calendarGradient)" filter="url(#glow)"/>
+    
+    <!-- Calendar Header -->
+    <rect x="-20" y="-20" width="40" height="8" rx="2" fill="rgba(255,255,255,0.9)"/>
+    
+    <!-- Calendar Grid -->
+    <rect x="-15" y="-8" width="30" height="2" fill="rgba(255,255,255,0.7)"/>
+    <rect x="-15" y="-3" width="30" height="2" fill="rgba(255,255,255,0.7)"/>
+    <rect x="-15" y="2" width="20" height="2" fill="rgba(255,255,255,0.7)"/>
+    
+    <!-- Due Date Circle -->
+    <circle cx="0" cy="12" r="8" fill="rgba(255,255,255,0.9)"/>
+    <text x="0" y="16" text-anchor="middle" fill="#1976D2" 
+          font-family="Arial Black, sans-serif" font-size="10" font-weight="bold">14</text>
+  </g>
+
+  <!-- Floating Particles (decorative) -->
+  <circle cx="120" cy="180" r="3" fill="rgba(255,255,255,0.4)" opacity="0.8"/>
+  <circle cx="380" cy="280" r="2" fill="rgba(255,255,255,0.3)" opacity="0.6"/>
+  <circle cx="150" cy="350" r="2.5" fill="rgba(255,255,255,0.35)" opacity="0.7"/>
+  <circle cx="390" cy="200" r="1.5" fill="rgba(255,255,255,0.4)" opacity="0.5"/>
+
+  <!-- Subtle Ring Effect -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1" opacity="0.5"/>
+</svg>

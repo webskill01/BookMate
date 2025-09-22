@@ -1,0 +1,175 @@
+/* ===== CUSTOM SCROLLBAR STYLES ===== */
+/* Add this to your index.css file */
+
+/* === WEBKIT SCROLLBAR STYLING === */
+/* Main scrollbar width */
+::-webkit-scrollbar {
+  width: 6px; /* Minimal width for clean look */
+  height: 6px; /* For horizontal scrollbars */
+}
+
+/* Scrollbar track (background) */
+::-webkit-scrollbar-track {
+  background: transparent; /* Invisible track for minimal look */
+  border-radius: 0px;
+}
+
+/* Scrollbar thumb (the draggable part) - Light Mode */
+::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.3); /* Light green, subtle */
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+/* Scrollbar thumb on hover - Light Mode */
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 197, 94, 0.6); /* More visible green on hover */
+  width: 8px; /* Slightly wider on hover */
+}
+
+/* Scrollbar thumb when active/dragging - Light Mode */
+::-webkit-scrollbar-thumb:active {
+  background: rgba(22, 163, 74, 0.8); /* Darker green when dragging */
+}
+
+/* === DARK MODE SCROLLBAR === */
+html.dark ::-webkit-scrollbar-track {
+  background: transparent; /* Keep track invisible in dark mode */
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.4); /* Slightly more visible in dark */
+  border-radius: 3px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 197, 94, 0.7); /* Bright green on hover in dark */
+}
+
+html.dark ::-webkit-scrollbar-thumb:active {
+  background: rgba(34, 197, 94, 0.9); /* Full green when active in dark */
+}
+
+/* === SCROLLBAR CORNER (when both scrollbars present) === */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* === FIREFOX SCROLLBAR (Modern Firefox) === */
+* {
+  scrollbar-width: thin; /* Makes scrollbar thinner */
+  scrollbar-color: rgba(34, 197, 94, 0.4) transparent; /* thumb and track colors */
+}
+
+html.dark * {
+  scrollbar-color: rgba(34, 197, 94, 0.6) transparent; /* Brighter in dark mode */
+}
+
+/* === SMOOTH SCROLLING === */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px; /* Account for fixed navbar */
+}
+
+/* Disable smooth scrolling for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* === CUSTOM SCROLLABLE CONTAINERS === */
+/* For specific containers that need custom scrollbars */
+.custom-scrollbar {
+  /* Apply to specific elements like sidebars, modals, etc. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 197, 94, 0.4) rgba(0, 0, 0, 0.05);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.4);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 197, 94, 0.7);
+}
+
+/* Dark mode for custom scrollbar containers */
+html.dark .custom-scrollbar {
+  scrollbar-color: rgba(34, 197, 94, 0.6) rgba(255, 255, 255, 0.05);
+}
+
+html.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.6);
+}
+
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 197, 94, 0.8);
+}
+
+/* === UTILITY CLASSES === */
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+
+/* Show scrollbar only on hover */
+.scrollbar-on-hover {
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-on-hover::-webkit-scrollbar {
+  width: 0px;
+  transition: width 0.2s ease;
+}
+
+.scrollbar-on-hover:hover {
+  scrollbar-width: thin; /* Firefox */
+}
+
+.scrollbar-on-hover:hover::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-on-hover:hover::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.4);
+  border-radius: 3px;
+}
+
+/* === MOBILE OPTIMIZATIONS === */
+/* Hide scrollbars on mobile for cleaner look */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 0px; /* Hide on mobile */
+  }
+  
+  * {
+    scrollbar-width: none; /* Hide in Firefox mobile */
+  }
+}
+
+/* Show thin scrollbar on tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+  ::-webkit-scrollbar {
+    width: 4px; /* Even thinner on tablets */
+  }
+}

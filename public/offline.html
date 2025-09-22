@@ -1,0 +1,546 @@
+<!-- public/offline.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BookMate - You're Offline</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <meta name="theme-color" content="#4CAF50">
+  <!-- Preload Google Fonts for better performance -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap"></noscript>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      /* BookMate Dark Background with Green Gradient */
+      background: linear-gradient(135deg, #121212 0%, #1E1E1E 25%, #2C5530 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #FFFFFF;
+      /* Mobile optimizations */
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      -webkit-tap-highlight-color: transparent;
+      /* PWA safe area support */
+      padding-top: max(20px, env(safe-area-inset-top));
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      padding-left: max(20px, env(safe-area-inset-left));
+      padding-right: max(20px, env(safe-area-inset-right));
+    }
+    
+    .offline-container {
+      /* BookMate Card Colors */
+      background: #1E1E1E;
+      border: 1px solid #2C2C2C;
+      border-radius: 24px;
+      padding: 48px 36px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      /* BookMate Shadow */
+      box-shadow: 
+        0 20px 25px -5px rgba(0, 0, 0, 0.3), 
+        0 10px 10px -5px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(76, 175, 80, 0.1);
+      animation: slideUp 0.6s ease-out;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #4CAF50, #03DAC6);
+      border-radius: 12px;
+      font-size: 1.5rem;
+      animation: bounce 3s infinite;
+    }
+    
+    .brand-title {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, #4CAF50, #03DAC6);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0;
+    }
+    
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0) rotate(0deg);
+      }
+      10% {
+        transform: translateY(-8px) rotate(-2deg);
+      }
+      30% {
+        transform: translateY(-5px) rotate(1deg);
+      }
+      40% {
+        transform: translateY(-12px) rotate(-1deg);
+      }
+      60% {
+        transform: translateY(-5px) rotate(0.5deg);
+      }
+    }
+    
+    .icon {
+      font-size: 4rem;
+      margin-bottom: 24px;
+      animation: pulse 2s infinite;
+      filter: grayscale(20%);
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+      }
+    }
+    
+    h1 {
+      color: #FFFFFF;
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.875rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    
+    p {
+      color: #B3B3B3;
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+    
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .btn {
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: 'Poppins', sans-serif;
+      min-height: 48px;
+      position: relative;
+      overflow: hidden;
+      /* Mobile touch target */
+      min-width: 44px;
+    }
+    
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    .btn:hover::before {
+      left: 100%;
+    }
+    
+    .btn-primary {
+      /* BookMate Primary Color */
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+    
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #45a049, #3d8b40);
+      transform: translateY(-2px);
+      box-shadow: 
+        0 8px 20px rgba(76, 175, 80, 0.4),
+        0 0 0 3px rgba(76, 175, 80, 0.1);
+    }
+    
+    .btn-primary:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+    
+    .btn-secondary {
+      /* BookMate Secondary Colors */
+      background: #2C2C2C;
+      color: #FFFFFF;
+      border: 1px solid #4CAF50;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .btn-secondary:hover {
+      background: rgba(76, 175, 80, 0.1);
+      border-color: #4CAF50;
+      transform: translateY(-2px);
+      box-shadow: 
+        0 8px 20px rgba(0, 0, 0, 0.3),
+        0 0 0 2px rgba(76, 175, 80, 0.2);
+    }
+    
+    .btn-secondary:active {
+      transform: translateY(0);
+      background: rgba(76, 175, 80, 0.05);
+    }
+    
+    .status {
+      margin-top: 24px;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      display: none;
+      animation: slideDown 0.3s ease-out;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .offline .status {
+      display: block;
+      background: rgba(255, 179, 0, 0.2);
+      border: 1px solid rgba(255, 179, 0, 0.3);
+      color: #FFB300;
+    }
+    
+    .online .status {
+      display: block;
+      background: rgba(76, 175, 80, 0.2);
+      border: 1px solid rgba(76, 175, 80, 0.3);
+      color: #4CAF50;
+    }
+    
+    /* Loading animation */
+    .loading {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: currentColor;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 8px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 480px) {
+      body {
+        padding: 16px;
+      }
+      
+      .offline-container {
+        padding: 32px 24px;
+        border-radius: 20px;
+      }
+      
+      h1 {
+        font-size: 1.5rem;
+      }
+      
+      .icon {
+        font-size: 3rem;
+      }
+      
+      .brand-logo {
+        width: 40px;
+        height: 40px;
+      }
+      
+      .brand-title {
+        font-size: 1.25rem;
+      }
+      
+      .btn {
+        padding: 12px 20px;
+        font-size: 15px;
+      }
+    }
+    
+    /* Landscape mobile optimization */
+    @media (max-height: 600px) and (orientation: landscape) {
+      .offline-container {
+        padding: 24px 32px;
+        max-width: 500px;
+      }
+      
+      .icon {
+        font-size: 2.5rem;
+        margin-bottom: 16px;
+      }
+      
+      .brand {
+        margin-bottom: 20px;
+      }
+    }
+    
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+      .btn-primary {
+        border: 2px solid #FFFFFF;
+      }
+      
+      .btn-secondary {
+        border: 2px solid #4CAF50;
+      }
+    }
+    
+    /* Reduced motion support */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-container">
+    <!-- BookMate Brand -->
+    <div class="brand">
+      <div class="brand-logo">📚</div>
+      <h2 class="brand-title">BookMate</h2>
+    </div>
+    
+    <div class="icon">📡</div>
+    <h1>You're Offline</h1>
+    <p>BookMate needs an internet connection to sync your books and send notifications. Please check your connection and try again.</p>
+    
+    <div class="buttons">
+      <button class="btn btn-primary" onclick="retryConnection()">
+        <span id="retry-text">🔄 Try Again</span>
+        <span class="loading" id="loading" style="display: none;"></span>
+      </button>
+      <button class="btn btn-secondary" onclick="goToDashboard()">
+        📱 View Cached Books
+      </button>
+    </div>
+    
+    <div class="status" id="status">
+      ❌ Still offline. Check your connection.
+    </div>
+  </div>
+
+  <script>
+    // BookMate App Theme Colors
+    const BOOKMATE_COLORS = {
+      primary: '#4CAF50',
+      secondary: '#03DAC6',
+      dark: {
+        bg: '#121212',
+        card: '#1E1E1E',
+        border: '#2C2C2C'
+      }
+    };
+    
+    // Update meta theme color for PWA
+    function updateThemeColor(online = false) {
+      const metaTheme = document.querySelector('meta[name="theme-color"]');
+      metaTheme.content = online ? BOOKMATE_COLORS.primary : BOOKMATE_COLORS.dark.bg;
+    }
+    
+    // Enhanced online status detection
+    function updateOnlineStatus() {
+      const status = document.getElementById('status');
+      const body = document.body;
+      const isOnline = navigator.onLine && (
+        performance.navigation?.connection?.effectiveType !== 'none'
+      );
+      
+      if (isOnline) {
+        body.classList.remove('offline');
+        body.classList.add('online');
+        status.innerHTML = '✅ Connection restored! Click "Try Again" to continue.';
+        updateThemeColor(true);
+        
+        // Auto-reload after showing success message
+        setTimeout(() => {
+          if (navigator.onLine) {
+            window.location.reload();
+          }
+        }, 1500);
+      } else {
+        body.classList.remove('online');
+        body.classList.add('offline');
+        status.innerHTML = '❌ Still offline. Check your connection.';
+        updateThemeColor(false);
+      }
+    }
+    
+    // Enhanced retry with loading state
+    function retryConnection() {
+      const retryText = document.getElementById('retry-text');
+      const loading = document.getElementById('loading');
+      const btn = event.target.closest('.btn-primary');
+      
+      // Show loading state
+      retryText.style.display = 'none';
+      loading.style.display = 'inline-block';
+      btn.style.pointerEvents = 'none';
+      
+      // Test connection with fetch
+      fetch('/', { 
+        method: 'HEAD',
+        cache: 'no-cache',
+        mode: 'no-cors'
+      }).then(() => {
+        // Connection successful
+        updateOnlineStatus();
+        window.location.reload();
+      }).catch(() => {
+        // Still offline
+        setTimeout(() => {
+          retryText.style.display = 'inline';
+          loading.style.display = 'none';
+          btn.style.pointerEvents = 'auto';
+          updateOnlineStatus();
+        }, 1000);
+      });
+    }
+    
+    function goToDashboard() {
+      // Try to navigate to dashboard (cached version)
+      try {
+        window.location.href = '/dashboard';
+      } catch (error) {
+        // Fallback to home
+        window.location.href = '/';
+      }
+    }
+    
+    // Service Worker registration check
+    function checkServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then((registration) => {
+          console.log('BookMate SW ready:', registration.scope);
+        }).catch((error) => {
+          console.log('BookMate SW error:', error);
+        });
+      }
+    }
+    
+    // Enhanced connection monitoring
+    function monitorConnection() {
+      // Modern browsers
+      if ('connection' in navigator) {
+        const connection = navigator.connection;
+        const updateConnection = () => updateOnlineStatus();
+        connection.addEventListener('change', updateConnection);
+      }
+      
+      // Fallback for all browsers
+      window.addEventListener('online', updateOnlineStatus);
+      window.addEventListener('offline', updateOnlineStatus);
+      
+      // Periodic connection check
+      setInterval(() => {
+        if (!navigator.onLine) {
+          updateOnlineStatus();
+        }
+      }, 10000); // Check every 10 seconds when offline
+    }
+    
+    // Initialize
+    function init() {
+      updateOnlineStatus();
+      updateThemeColor();
+      checkServiceWorker();
+      monitorConnection();
+      
+      // PWA install prompt handling
+      window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('BookMate PWA install available');
+      });
+    }
+    
+    // Start when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+    
+    // Prevent refresh loops
+    let reloadAttempts = 0;
+    const MAX_RELOAD_ATTEMPTS = 3;
+    
+    window.addEventListener('online', () => {
+      if (reloadAttempts < MAX_RELOAD_ATTEMPTS) {
+        reloadAttempts++;
+        setTimeout(() => {
+          if (navigator.onLine) {
+            window.location.reload();
+          }
+        }, 1000);
+      }
+    });
+  </script>
+</body>
+</html>

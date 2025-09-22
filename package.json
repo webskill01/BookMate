@@ -1,0 +1,81 @@
+{
+  "name": "bookmate",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "BookMate - Smart Library Management PWA for tracking borrowed books and due date notifications",
+  "author": "Your Name",
+  "license": "MIT",
+  "homepage": "https://book-mate-delta.vercel.app",
+  "keywords": [
+    "pwa",
+    "library-management",
+    "react",
+    "firebase",
+    "notifications",
+    "student-project"
+  ],
+  "scripts": {
+    "dev": "vite --port 8000",
+    "build": "npm run build:sw && vite build && npm run post-build",
+    "build:sw": "node scripts/build-sw.js",
+    "post-build": "node scripts/post-build.js",
+    "optimize-build": "node scripts/post-build-optimize.js",
+    "preview": "vite preview --port 8001",
+    "lint": "eslint src --ext js,jsx --max-warnings 0",
+    "lint:fix": "eslint src --ext js,jsx --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,css,md}\"",
+    "type-check": "tsc --noEmit",
+    "test": "echo \"Tests not implemented yet\"",
+    "clean": "rm -rf dist node_modules/.vite node_modules/.cache",
+    "clean:cache": "rm -rf node_modules/.vite* dist/.vite*",
+    "generate-icons": "node scripts/generate-icons.js",
+    "analyze": "npm run build && npx vite-bundle-analyzer dist",
+    "deploy": "npm run build && vercel --prod"
+  },
+  "dependencies": {
+    "firebase": "^10.12.2",
+    "lucide-react": "^0.263.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.14.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.0.3",
+    "@vitejs/plugin-react-swc": "^3.11.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "postcss": "^8.5.6",
+    "prettier": "^3.0.0",
+    "tailwindcss": "^3.4.17",
+    "vite": "^5.4.20",
+    "vite-bundle-analyzer": "^0.7.0",
+    "vite-plugin-pwa": "^0.20.5",
+    "workbox-window": "^7.0.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all",
+      "chrome >= 60",
+      "firefox >= 60",
+      "safari >= 12",
+      "edge >= 79"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=16.14.0",
+    "npm": ">=8.0.0"
+  }
+}
