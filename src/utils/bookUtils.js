@@ -22,19 +22,24 @@ export const bookUtils = {
   },
 
   calculateDaysRemaining: (dueDate) => {
-  // FIXED: Use built-in timezone conversion
+  // CORRECT: Use proper UTC manipulation
   const now = new Date();
   
-  // Get current time in IST consistently
-  const nowIST = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
-  nowIST.setHours(0, 0, 0, 0);
+  // Convert current time to IST (UTC + 5:30)
+  const istOffset = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds
+  const utcNow = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 
+                         now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+  const istNow = new Date(utcNow.getTime() + istOffset);
+  istNow.setHours(0, 0, 0, 0); // Start of day in IST
   
-  // Get due date in IST
+  // Convert due date to IST  
   const due = new Date(dueDate);
-  const dueIST = new Date(due.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
-  dueIST.setHours(0, 0, 0, 0);
+  const utcDue = new Date(due.getUTCFullYear(), due.getUTCMonth(), due.getUTCDate(),
+                         due.getUTCHours(), due.getUTCMinutes(), due.getUTCSeconds());
+  const istDue = new Date(utcDue.getTime() + istOffset);
+  istDue.setHours(0, 0, 0, 0); // Start of day in IST
   
-  const diffTime = dueIST.getTime() - nowIST.getTime();
+  const diffTime = istDue.getTime() - istNow.getTime();
   const days = diffTime / (1000 * 60 * 60 * 24);
   
   return Math.round(days);

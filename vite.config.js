@@ -1,4 +1,4 @@
-// vite.config.js - CORRECTED for Tailwind CSS v3
+// vite.config.js - FULLY CORRECTED VERSION
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -96,6 +96,7 @@ export default defineConfig(({ mode }) => {
       }
     },
 
+    // FIXED: Server config at root level
     server: {
       port: 8000,
       host: true,
@@ -103,6 +104,10 @@ export default defineConfig(({ mode }) => {
       cors: true,
       hmr: {
         overlay: true
+      },
+      // MOVED: Headers belong in server config
+      headers: {
+        'Content-Security-Policy': "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://*.googleapis.com"
       }
     },
 
@@ -111,7 +116,6 @@ export default defineConfig(({ mode }) => {
       host: true
     },
 
-    // CSS configuration - NO Tailwind v4 plugin here
     css: {
       devSourcemap: !isProduction,
     },
@@ -131,19 +135,13 @@ export default defineConfig(({ mode }) => {
             'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/messaging'],
             'ui-vendor': ['lucide-react']
           },
-          server: {
-    headers: {
-      'Content-Security-Policy': "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com"
-    }
-  },
-
+          // REMOVED: server config doesn't belong in rollupOptions.output
           chunkFileNames: (chunkInfo) => {
             const facadeModuleId = chunkInfo.facadeModuleId
               ? chunkInfo.facadeModuleId.split('/').pop().replace('.jsx', '').replace('.js', '')
               : 'chunk';
             return `js/${facadeModuleId}-[hash].js`;
           },
-
           assetFileNames: (assetInfo) => {
             const extType = assetInfo.name.split('.').at(1);
             if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {

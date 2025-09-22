@@ -21,6 +21,18 @@ class ProductionNotificationService {
           error: 'Please enable notifications in browser settings.'
         };
       }
+      try {
+  // Firebase operations
+  const result = await bookService.getUserBooks(userId);
+  return result;
+} catch (error) {
+  if (error.code === 'unavailable' || error.message.includes('ERR_BLOCKED_BY_CLIENT')) {
+    // Fallback to cached data or show user-friendly message
+    console.warn('Firebase blocked by adblocker - using cached data');
+    return bookService.getCachedUserBooks(userId);
+  }
+  throw error;
+}
 
       // Wait for Firebase messaging to be ready
       let retryCount = 0;
