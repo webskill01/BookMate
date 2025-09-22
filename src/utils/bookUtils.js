@@ -22,21 +22,22 @@ export const bookUtils = {
   },
 
   calculateDaysRemaining: (dueDate) => {
-  // ULTRA-SIMPLE: Force both dates to IST using locale methods
+  // Handle both Date objects and strings  
+  const due = dueDate instanceof Date ? dueDate : new Date(dueDate);
+  
+  // Force both dates to IST timezone
   const options = { timeZone: 'Asia/Kolkata' };
   const today = new Date().toLocaleDateString('en-CA', options); // YYYY-MM-DD in IST
-  const due = new Date(dueDate).toLocaleDateString('en-CA', options);
+  const dueDay = due.toLocaleDateString('en-CA', options); // YYYY-MM-DD in IST
   
   const todayDate = new Date(today + 'T00:00:00');
-  const dueDateTime = new Date(due + 'T00:00:00');
+  const dueDateTime = new Date(dueDay + 'T00:00:00');
   
   const diffTime = dueDateTime.getTime() - todayDate.getTime();
   const days = diffTime / (1000 * 60 * 60 * 24);
   
   return Math.round(days);
 },
-
-
   // Rest of your existing methods...
   getUserFineRate: async (userId) => {
     try {
@@ -52,13 +53,14 @@ export const bookUtils = {
   },
 
   calculateFineSync: (dueDate, finePerDay = 1) => {
-    const daysRemaining = bookUtils.calculateDaysRemaining(dueDate);
-    if (daysRemaining >= 0) {
-      return 0;
-    }
-    const daysOverdue = Math.abs(daysRemaining);
-    return daysOverdue * finePerDay;
-  },
+  // Handle both Date objects and strings
+  const daysRemaining = bookUtils.calculateDaysRemaining(dueDate); // No need to convert
+  if (daysRemaining >= 0) {
+    return 0;
+  }
+  const daysOverdue = Math.abs(daysRemaining);
+  return daysOverdue * finePerDay;
+},
 
   calculateFine: async (dueDate, userId, bookFineRate = null) => {
     const daysRemaining = bookUtils.calculateDaysRemaining(dueDate);

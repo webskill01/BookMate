@@ -187,9 +187,16 @@ class ProductionNotificationService {
         const bookData = docSnap.data();
         if (bookData.dueDate && (!bookData.status || bookData.status !== 'returned')) {
           let dueDate = bookData.dueDate.toDate ? bookData.dueDate.toDate() : new Date(bookData.dueDate);
-
-          const daysRemaining = bookUtils.calculateDaysRemaining(dueDate.toISOString());
-          const currentFine = bookUtils.calculateFineSync(dueDate.toISOString(), bookData.finePerDay || 1);
+const daysRemaining = bookUtils.calculateDaysRemaining(dueDate); // Remove .toISOString()
+const currentFine = bookUtils.calculateFineSync(dueDate, bookData.finePerDay || 1); // Remove .toISOString()
+console.log('📱 TIMEZONE DEBUG:', {
+  bookTitle: bookData.title,
+  originalDueDate: bookData.dueDate,
+  processedDueDate: dueDate,
+  daysRemaining,
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  shouldNotify: this.shouldSendNotification(daysRemaining)
+});
 
           books.push({
             id: docSnap.id,
@@ -213,6 +220,7 @@ class ProductionNotificationService {
   shouldSendNotification(daysRemaining) {
     return daysRemaining === 3 || daysRemaining === 1 || daysRemaining === 0 || daysRemaining < 0;
   }
+  
 
   // Manual notification check
   async checkAndSendNotifications(userId) {
