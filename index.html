@@ -80,46 +80,34 @@
   manifest-src 'self';
 " />
 
-  <!-- THEME INITIALIZATION SCRIPT - Prevents Flash of Wrong Theme -->
-  <script>
-    (function() {
-      try {
-        // Get saved theme or default to light
-        const savedTheme = localStorage.getItem('bookmate-theme') || 'light';
-        const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
-        // Determine theme to apply
-        let themeToApply = 'light'; // Always default to light for first-time users
-        
-        if (savedTheme === 'system') {
-          themeToApply = systemPrefersDark ? 'dark' : 'light';
-        } else if (savedTheme === 'dark') {
-          themeToApply = 'dark';
-        } else {
-          themeToApply = 'light'; // Explicit light mode
-        }
-        
-        // Apply theme to html element immediately
-        document.documentElement.className = themeToApply;
-        
-        // Store default for first-time users
-        if (!localStorage.getItem('bookmate-theme')) {
-          localStorage.setItem('bookmate-theme', 'light');
-        }
-        
-        console.log('🌞 Theme initialized:', themeToApply);
-      } catch (e) {
-        // Fallback to light theme if anything fails
-        document.documentElement.className = 'light';
-        console.log('🌞 Theme fallback: light mode applied');
-      }
-    })();
-  </script>
   
   <!-- Module Preload -->
   <link rel="modulepreload" href="/src/main.jsx" />
   <link rel="stylesheet" href="/src/styles/loading.css" />
-  
+<!-- theme script -->
+   <script>
+    (function() {
+      try {
+        const savedTheme = localStorage.getItem('bookmate-theme') || 'light';
+        const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        let themeToApply = 'light';
+        if (savedTheme === 'system') {
+          themeToApply = systemPrefersDark ? 'dark' : 'light';
+        } else if (savedTheme === 'dark') {
+          themeToApply = 'dark';
+        }
+        
+        document.documentElement.className = themeToApply;
+        
+        if (!localStorage.getItem('bookmate-theme')) {
+          localStorage.setItem('bookmate-theme', 'light');
+        }
+      } catch (e) {
+        document.documentElement.className = 'light';
+      }
+    })();
+  </script>
   <!-- Suppress browser extension errors -->
   <script>
     const originalError = console.error;
@@ -141,11 +129,6 @@
       <!-- App Icon with Fallback -->
       <div class="bookmate-loading-icon">
         <img src="/icons/icon-192x192.png" alt="BookMate" onerror="this.style.display='none'" />
-        <!-- Fallback SVG BookMark Icon -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-          <path d="M6.5 2H20v20l-5.5-6-5.5 6V2z"></path>
-        </svg>
       </div>
       
       <!-- Loading Spinner -->
