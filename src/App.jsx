@@ -60,7 +60,10 @@ function App() {
   }, []);
 
   return (
-    <Router>
+    <Router future={{
+            v7_relativeSplatPath: true,
+          }}
+        >
       <ThemeProvider>
         <AuthProvider>
           <div className="min-h-screen bg-theme-bg">

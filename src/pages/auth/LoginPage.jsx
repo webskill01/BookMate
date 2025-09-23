@@ -1,33 +1,26 @@
-// src/pages/LoginPage.jsx - FULLY FUNCTIONAL VERSION
+// src/pages/LoginPage.jsx - ENHANCED ERROR HANDLING VERSION
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Mail, Lock, LogIn, BookMarked, 
-   ArrowRight, Sparkles, Info
-} from 'lucide-react';
+import { Mail, Lock, LogIn, BookMarked, ArrowRight, Sparkles, Info, Chrome } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import { setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
-
-// Import utility components
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Alert from '../../components/ui/Alert';
 
 const LoginPage = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [sendingReset, setSendingReset] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, error, clearError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
@@ -44,14 +37,22 @@ const LoginPage = () => {
   // Handle navigation success messages
   useEffect(() => {
     if (location.state?.message) {
-      setMessage({
-        type: location.state.type || 'success',
-        text: location.state.message
+      setMessage({ 
+        type: location.state.type || 'success', 
+        text: location.state.message 
       });
       navigate(location.pathname, { replace: true });
       setTimeout(() => setMessage({ type: '', text: '' }), 5000);
     }
   }, [location.state, navigate, location.pathname]);
+
+  // Handle auth context errors
+  useEffect(() => {
+    if (error) {
+      setMessage({ type: 'error', text: error });
+      clearError();
+    }
+  }, [error, clearError]);
 
   // Clear messages when user starts typing
   const handleInputChange = (field, value) => {
@@ -62,96 +63,114 @@ const LoginPage = () => {
   // Handle Remember Me checkbox
   const handleRememberMeChange = (checked) => {
     setRememberMe(checked);
-    
     if (checked) {
-      // Save current email to localStorage
       if (formData.email.trim()) {
         localStorage.setItem('bookmate_saved_email', formData.email.trim());
       }
     } else {
-      // Remove saved email
       localStorage.removeItem('bookmate_saved_email');
     }
   };
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Basic validation
+  // Enhanced form validation
+  const validateForm = () => {
     if (!formData.email.trim()) {
       setMessage({ type: 'error', text: 'Email is required' });
-      return;
+      return false;
     }
-    
+
     if (!formData.password.trim()) {
       setMessage({ type: 'error', text: 'Password is required' });
-      return;
+      return false;
     }
 
-    try {
-      setLoading(true);
-      
-      // Set Firebase persistence based on Remember Me
-      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
-      
-      // Save/remove email based on Remember Me
-      if (rememberMe) {
-        localStorage.setItem('bookmate_saved_email', formData.email.trim());
-      } else {
-        localStorage.removeItem('bookmate_saved_email');
-      }
-      
-      await login(formData.email, formData.password);
-      
-      navigate(from, { replace: true });
-    } catch (error) {
-      let errorMessage = 'Login failed. Please try again.';
-      
-      if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email address.';
-      } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password. Please try again.';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Please enter a valid email address.';
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many failed attempts. Please try again later.';
-      } else if (error.code === 'auth/invalid-credential') {
-        errorMessage = 'Invalid email or password. Please check and try again.';
-      }
-      
-      setMessage({ type: 'error', text: errorMessage });
-    } finally {
-      setLoading(false);
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      setMessage({ type: 'error', text: 'Please enter a valid email address' });
+      return false;
     }
+
+    return true;
   };
 
-  // Handle Google login
+  // Handle form submission
+  // Add this to your LoginPage.jsx - just the enhanced handleSubmit function
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!validateForm()) return;
+
+  try {
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+
+    // Check if this might be a post-password-reset scenario
+    const passwordResetPending = localStorage.getItem('bookmate_password_reset_pending')
+    const isPostPasswordReset = passwordResetPending === formData.email.trim()
+
+    // Set Firebase persistence
+    await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+
+    // Handle Remember Me
+    if (rememberMe) {
+      localStorage.setItem('bookmate_saved_email', formData.email.trim());
+    } else {
+      localStorage.removeItem('bookmate_saved_email');
+    }
+
+    // If this is potentially post-password-reset, show helpful message
+    if (isPostPasswordReset) {
+      setMessage({ 
+        type: 'info', 
+        text: 'Attempting login with new password...' 
+      });
+    }
+
+    await login(formData.email.trim(), formData.password);
+    
+    // Clear password reset flag on successful login
+    localStorage.removeItem('bookmate_password_reset_pending')
+    
+    navigate(from, { replace: true });
+    
+  } catch (error) {
+    // If login fails and it might be post-password-reset, show helpful message
+    const passwordResetPending = localStorage.getItem('bookmate_password_reset_pending')
+    if (passwordResetPending === formData.email.trim() && error.message.includes('Invalid email or password')) {
+      setMessage({
+        type: 'warning',
+        text: 'Login failed after password reset. This sometimes happens due to browser caching. The app has automatically cleared cached data - please try logging in again with your NEW password.'
+      });
+      // Clear the flag so user doesn't see this message repeatedly
+      localStorage.removeItem('bookmate_password_reset_pending')
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  // Enhanced Google login with better error handling
   const handleGoogleLogin = async () => {
     try {
-      setLoading(true);
-      
-      // Set persistence for Google login too
+      setGoogleLoading(true);
+      setMessage({ type: '', text: '' });
+
+      // Set persistence for Google login
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
-      
+
       await loginWithGoogle();
       navigate(from, { replace: true });
+      
     } catch (error) {
-      let errorMessage = 'Google sign-in failed. Please try again.';
-      
-      if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = 'Sign-in was cancelled. Please try again.';
-      } else if (error.code === 'auth/popup-blocked') {
-        errorMessage = 'Pop-up was blocked. Please allow pop-ups and try again.';
-      }
-      
-      setMessage({ type: 'error', text: errorMessage });
+      // Error is handled by useEffect above through auth context
     } finally {
-      setLoading(false);
+      setGoogleLoading(false);
     }
   };
 
-  // Enhanced forgot password with better error handling and user guidance
+  // Enhanced forgot password with better validation
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     
@@ -160,7 +179,7 @@ const LoginPage = () => {
       return;
     }
 
-    // Basic email validation
+    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(resetEmail.trim())) {
       setMessage({ type: 'error', text: 'Please enter a valid email address' });
@@ -170,12 +189,11 @@ const LoginPage = () => {
     try {
       setSendingReset(true);
       
-      // Configure action code settings for better email experience
       const actionCodeSettings = {
-        url: `${window.location.origin}/auth/login`, // Redirect back to login after reset
-        handleCodeInApp: false, // Use email link instead of in-app handling
+        url: `${window.location.origin}/auth/login`,
+        handleCodeInApp: false,
       };
-      
+
       await sendPasswordResetEmail(auth, resetEmail.trim(), actionCodeSettings);
       
       setMessage({ 
@@ -185,6 +203,7 @@ const LoginPage = () => {
       
       setShowForgotPassword(false);
       setResetEmail('');
+      
     } catch (error) {
       let errorMessage = 'Failed to send reset email. Please try again.';
       
@@ -193,7 +212,9 @@ const LoginPage = () => {
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = 'Please enter a valid email address.';
       } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many reset attempts. Please wait a few minutes before trying again.';
+        errorMessage = 'Too many reset attempts. Please wait a few minutes and try again.';
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your connection and try again.';
       }
       
       setMessage({ type: 'error', text: errorMessage });
@@ -203,123 +224,127 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-theme-bg via-accent-primary/5 to-purple-50 dark:to-gray-900">
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-accent-primary to-purple-500 rounded-2xl mb-4">
+    <div className="min-h-screen bg-theme-bg flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+         <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-accent-primary to-purple-500 rounded-2xl mb-4">
               <BookMarked className="w-8 h-8 text-white" />
             </div>
-            
-            <h1 className="text-mobile-2xl font-heading font-bold text-theme-primary mb-2">
-              Welcome Back!
-            </h1>
-            <p className="text-theme-secondary text-mobile-sm">
-              Sign in to manage your library books and never miss a due date
-            </p>
+          
+          <h1 className="text-mobile-2xl font-heading font-bold text-theme-primary mb-2">
+            Welcome Back
+          </h1>
+          <p className="text-theme-secondary text-mobile-sm leading-relaxed">
+            Sign in to manage your library books and never miss a due date
+          </p>
+        </div>
+
+        {/* Message Display */}
+        {message.text && (
+          <div className="mb-6">
+            <Alert 
+              type={message.type}
+              message={message.text}
+              onClose={() => setMessage({ type: '', text: '' })}
+            />
           </div>
+        )}
 
-          {/* Main Card */}
+        {/* Login Form */}
+        {!showForgotPassword ? (
           <div className="bg-theme-card/80 backdrop-blur-sm rounded-3xl shadow-xl border border-theme-border/50 p-8">
-            {/* Message Display */}
-            {message.text && (
-              <div className="mb-6">
-                <Alert 
-                  type={message.type}
-                  message={message.text}
-                  onClose={() => setMessage({ type: '', text: '' })}
-                />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <Input
+                label="Email Address"
+                type="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                icon={Mail}
+                disabled={loading || googleLoading}
+                autoComplete="email"
+                required
+              />
+
+              <Input
+                label="Password"
+                type="password"
+                placeholder="Enter your password"
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                icon={Lock}
+                disabled={loading || googleLoading}
+                showPasswordToggle={true}
+                autoComplete="current-password"
+                required
+              />
+
+              {/* Remember Me & Forgot Password */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => handleRememberMeChange(e.target.checked)}
+                    disabled={loading || googleLoading}
+                    className="w-4 h-4 text-accent-primary bg-theme-card border-theme-border rounded focus:ring-accent-primary focus:ring-2"
+                  />
+                  <span className="text-mobile-sm text-theme-secondary">Remember me</span>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  disabled={loading || googleLoading}
+                  className="text-mobile-sm text-accent-primary hover:text-accent-primary/80 disabled:opacity-50"
+                >
+                  Forgot password?
+                </button>
               </div>
-            )}
 
-            {!showForgotPassword ? (
-              <>
-                {/* Login Form */}
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-4">
-                    <Input
-                      label="Email Address"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      placeholder="Enter your email"
-                      icon={Mail}
-                      disabled={loading}
-                      className="w-full"
-                    />
+              {/* Login Button */}
+              <Button
+                type="submit"
+                loading={loading}
+                disabled={googleLoading}
+                icon={LogIn}
+                className="w-full"
+              >
+                Sign In
+              </Button>
 
-                    <Input
-                      label="Password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
-                      placeholder="Enter your password"
-                      icon={Lock}
-                      disabled={loading}
-                      className="w-full"
-                      showPasswordToggle={true}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between text-mobile-sm">
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => handleRememberMeChange(e.target.checked)}
-                        className="w-4 h-4 rounded border-theme-border text-accent-primary focus:ring-accent-primary focus:ring-2"
-                      />
-                      <span className="ml-2 text-theme-secondary">Remember me</span>
-                    </label>
-                    
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowForgotPassword(true);
-                        setResetEmail(formData.email);
-                      }}
-                      className="text-accent-primary hover:text-accent-primary/80 font-medium transition-colors"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    loading={loading}
-                    disabled={loading}
-                    icon={LogIn}
-                    className="w-full shadow-lg shadow-accent-primary/25"
-                  >
-                    Sign In
-                  </Button>
-                </form>
-
-                {/* Divider */}
-                <div className="flex items-center my-6">
-                  <div className="flex-1 border-t border-theme-border"></div>
-                  <span className="px-3 text-theme-secondary text-mobile-sm">Or continue with</span>
-                  <div className="flex-1 border-t border-theme-border"></div>
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-theme-border"></div>
                 </div>
+                <div className="relative flex justify-center text-mobile-sm">
+                  <span className="px-4 bg-theme-bg text-theme-secondary">Or continue with</span>
+                </div>
+              </div>
 
-                {/* Google Sign In */}
-                <Button
-                  onClick={handleGoogleLogin}
-                  disabled={loading}
-                  variant="ghost"
-                  className="w-full border-1 border-theme-border hover:border-accent-primary/50 transition-all duration-200"
-                ><svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+              {/* Google Login */}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleGoogleLogin}
+                loading={googleLoading}
+                disabled={loading}
+                className="w-full border border-theme-border hover:border-accent-primary/50"
+              >
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-                  Continue with Google
-                </Button>
+                Continue with Google
+              </Button>
+            </form>
 
-                {/* Sign Up Link */}
-                <div className="text-center mt-8 pt-6 border-t border-theme-border/50">
+            {/* Register Link */}
+            <div className="text-center mt-8 pt-6 border-t border-theme-border/50">
                   <p className="text-theme-secondary text-mobile-sm">
                     Don't have an account?{' '}
                     <Link
@@ -330,84 +355,74 @@ const LoginPage = () => {
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </p>
-                </div>
-              </>
-            ) : (
-              /* Enhanced Forgot Password Form */
-              <div className="space-y-6">
-                <div className="text-center">
-                  <h2 className="text-mobile-xl font-heading font-semibold text-theme-primary mb-2">
-                    Reset Password
-                  </h2>
-                  <p className="text-theme-secondary text-mobile-sm">
-                    Enter your email address and we'll send you a secure link to reset your password
-                  </p>
-                </div>
-
-                {/* Email Delivery Info */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-blue-800 text-mobile-sm font-medium mb-1">
-                        Email Delivery Tips:
-                      </p>
-                      <ul className="text-blue-700 text-mobile-xs space-y-1">
-                        <li>• Check your spam/junk folder</li>
-                        <li>• Email may take up to 10 minutes to arrive</li>
-                        <li>• Make sure you entered the correct email</li>
-                        <li>• Add noreply@bookmate.com to your contacts</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <Input
-                    label="Email Address"
-                    type="email"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    icon={Mail}
-                    disabled={sendingReset}
-                    className="w-full"
-                  />
-
-                  <div className="flex gap-3">
-                    <Button
-                      type="submit"
-                      loading={sendingReset}
-                      disabled={sendingReset}
-                      className="flex-1"
-                    >
-                      {sendingReset ? 'Sending...' : 'Send Reset Email'}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => {
-                        setShowForgotPassword(false);
-                        setResetEmail('');
-                      }}
-                      disabled={sendingReset}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            )}
-          </div>
-
-          {/* Features Preview */}
-          <div className="mt-8 text-center">
-            <div className="inline-flex items-center gap-2 text-theme-secondary text-mobile-xs">
-              <Sparkles className="w-4 h-4" />
-              <span>Track books • Set reminders • Calculate fines automatically</span>
             </div>
           </div>
-        </div>
+        ) : (
+          /* Forgot Password Form */
+          <div className="card">
+            <div className="text-center mb-6">
+              <h2 className="text-mobile-lg font-heading font-semibold text-theme-primary mb-2">
+                Reset Password
+              </h2>
+              <p className="text-theme-secondary text-mobile-sm">
+                Enter your email address and we'll send you a secure link to reset your password
+              </p>
+            </div>
+
+            <form onSubmit={handleForgotPassword} className="space-y-6">
+              <Input
+                type="email"
+                placeholder="Enter your email address"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                icon={Mail}
+                disabled={sendingReset}
+                autoComplete="email"
+                required
+              />
+
+              <div className="flex gap-3">
+                <Button
+                  type="submit"
+                  loading={sendingReset}
+                  className="flex-1"
+                >
+                  Send Reset Link
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setResetEmail('');
+                    setMessage({ type: '', text: '' });
+                  }}
+                  disabled={sendingReset}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+
+            {/* Email Tips */}
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start space-x-3">
+                <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-mobile-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                    Email Delivery Tips:
+                  </h4>
+                  <ul className="text-mobile-xs text-blue-700 dark:text-blue-300 space-y-1">
+                    <li>• Check your spam/junk folder</li>
+                    <li>• Make sure the email address is correct</li>
+                    <li>• Wait a few minutes for delivery</li>
+                    <li>• Add bookmate to your contacts to avoid spam filters</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -631,10 +631,10 @@ const BookDetailsPage = () => {
                 </Button>
 
                 <Button
+                  variant="ghost"
                   onClick={() => setShowDeleteConfirm(true)}
                   icon={Trash2}
-                  variant="ghost"
-                  className="text-red-500 hover:bg-red-100/85 hover:text-red-600 border-red-200 w-full cursor-pointer"
+                  className="text-status-danger hover:bg-status-danger/10 border border-status-danger/40 hover:border-status-danger/80 w-full"
                 >
                   Delete Book
                 </Button>

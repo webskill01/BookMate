@@ -772,9 +772,9 @@ const SettingsPage = () => {
             <Button
               variant="ghost"
               onClick={logout}
-              className="w-full text-theme-secondary hover:text-theme-primary border border-theme-border"
+              className="w-full text-theme-secondary hover:text-theme-primary border border-gray-500"
             >
-              Sign Out
+              Log Out
             </Button>
           </div>
         </div>

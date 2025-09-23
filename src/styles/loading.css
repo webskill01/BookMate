@@ -1,0 +1,233 @@
+/* src/styles/loading.css - FIXED SPACING */
+
+/* RESET */
+#loading-screen,
+#loading-screen *,
+#loading-screen *::before,
+#loading-screen *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ROOT */
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #f3edd7 0%, #ffffff 50%, #f3edd7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+  overflow: hidden;
+}
+
+/* BACKGROUND ANIMATION */
+#loading-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(34, 197, 94, 0.1) 50%,
+    transparent 70%
+  );
+  animation: shimmer 3s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+  100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+}
+
+/* CONTENT */
+#loading-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 400px;
+  padding: 24px 20px;
+  text-align: center;
+
+  /* spacing scale (desktop default) */
+  --gap-icon-spinner: 56px;
+  --gap-spinner-title: 40px;
+  --gap-title-subtitle: 14px;
+  --gap-subtitle-text: 24px;
+}
+
+/* ICON */
+.bookmate-loading-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(34, 197, 94, 0.3),
+              0 0 0 1px rgba(34, 197, 94, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: iconPulse 2s ease-in-out infinite;
+  margin-bottom: var(--gap-icon-spinner);
+}
+.bookmate-loading-icon svg {
+  width: 40px;
+  height: 40px;
+  color: white;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+.bookmate-loading-icon img {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  object-fit: contain;
+}
+@keyframes iconPulse {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* SPINNER */
+.bookmate-loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(34, 197, 94, 0.2);
+  border-radius: 50%;
+  border-top-color: #22c55e;
+  border-right-color: #16a34a;
+  animation: spin 1.2s linear infinite;
+  position: relative;
+  margin-bottom: var(--gap-spinner-title);
+}
+.bookmate-loading-spinner::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 2px solid transparent;
+  border-top-color: rgba(34, 197, 94, 0.6);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite reverse;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* TYPOGRAPHY */
+.bookmate-loading-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: var(--gap-title-subtitle);
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.bookmate-loading-subtitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: #22c55e;
+  margin-bottom: var(--gap-subtitle-text);
+}
+.bookmate-loading-text {
+  font-size: 14px;
+  color: rgba(0,0,0,0.6);
+  animation: fadeInOut 2s ease-in-out infinite;
+}
+@keyframes fadeInOut {
+  0%,100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* DOTS */
+.bookmate-loading-dots {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: 8px;
+}
+.bookmate-loading-dots span {
+  width: 4px;
+  height: 4px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+.bookmate-loading-dots span:nth-child(2){ animation-delay: 0.2s; }
+.bookmate-loading-dots span:nth-child(3){ animation-delay: 0.4s; }
+@keyframes dotPulse {
+  0%,60%,100% { opacity: 0.3; transform: scale(0.8); }
+  30% { opacity: 1; transform: scale(1.2) translateY(-1px); }
+}
+
+/* FADE OUT */
+.bookmate-loading-fade-out {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.5s ease;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  #loading-content {
+    --gap-icon-spinner: 44px;
+    --gap-spinner-title: 32px;
+    --gap-title-subtitle: 12px;
+    --gap-subtitle-text: 20px;
+  }
+  .bookmate-loading-icon { width: 70px; height: 70px; }
+  .bookmate-loading-spinner { width: 44px; height: 44px; }
+  .bookmate-loading-title { font-size: 24px; }
+  .bookmate-loading-subtitle { font-size: 15px; }
+}
+
+@media (max-width: 480px) {
+  #loading-content {
+    --gap-icon-spinner: 36px;
+    --gap-spinner-title: 28px;
+    --gap-title-subtitle: 10px;
+    --gap-subtitle-text: 18px;
+    padding: 20px 16px;
+  }
+  .bookmate-loading-icon { width: 64px; height: 64px; border-radius: 16px; }
+  .bookmate-loading-spinner { width: 40px; height: 40px; }
+  .bookmate-loading-title { font-size: 22px; }
+  .bookmate-loading-subtitle { font-size: 14px; }
+  .bookmate-loading-text { font-size: 13px; }
+}
+
+@media (max-width: 320px) {
+  #loading-content {
+    --gap-icon-spinner: 28px;
+    --gap-spinner-title: 22px;
+    --gap-title-subtitle: 8px;
+    --gap-subtitle-text: 16px;
+  }
+  .bookmate-loading-icon { width: 58px; height: 58px; }
+  .bookmate-loading-spinner { width: 36px; height: 36px; }
+  .bookmate-loading-title { font-size: 20px; }
+  .bookmate-loading-subtitle { font-size: 13px; }
+  .bookmate-loading-text { font-size: 12px; }
+}
+
+/* DARK MODE */
+@media (prefers-color-scheme: dark) {
+  #loading-screen {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 50%, #1f2937 100%);
+  }
+  .bookmate-loading-subtitle { color: #10b981; }
+  .bookmate-loading-text { color: rgba(200,200,200,0.7); }
+}
+
+/* REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+  .bookmate-loading-icon,
+  .bookmate-loading-spinner,
+  .bookmate-loading-spinner::after,
+  .bookmate-loading-dots span {
+    animation-duration: 3s;
+  }
+  #loading-screen::before { animation: none; }
+}
