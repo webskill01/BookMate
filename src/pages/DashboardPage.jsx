@@ -1,4 +1,4 @@
-// src/pages/DashboardPage.jsx - CLEAN MODERN VERSION
+// src/pages/DashboardPage.jsx - OPTIMIZED VERSION
 import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, Plus, Calendar, AlertCircle, Clock, IndianRupee, 
@@ -9,13 +9,10 @@ import { bookService } from '../services/bookService';
 import { bookUtils } from '../utils/bookUtils';
 import { productionNotificationService } from '../services/productionNotificationService';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-console.log('🚨🚨🚨 DASHBOARD PAGE LOADED 🚨🚨🚨', new Date());
-// Import utility components
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
 
 const DashboardPage = () => {
-  console.log('🚨🚨🚨 DASHBOARD COMPONENT RENDERED 🚨🚨🚨');
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -63,130 +60,145 @@ const DashboardPage = () => {
     loadBooks();
   }, [currentUser]);
 
-  // Auto-check notifications
+  // Auto-check notifications on first load
   useEffect(() => {
     const autoCheckNotifications = async () => {
-      if (!currentUser) return;
+      if (!currentUser || books.length === 0) return;
       
       try {
+        // Check if notifications are enabled and permission granted
         const isEnabled = await productionNotificationService.isEnabled(currentUser.uid);
-        if (isEnabled && Notification.permission === 'granted') {
-          const lastCheck = localStorage.getItem(`last_auto_check_${currentUser.uid}`);
-          const now = Date.now();
-          
-          if (!lastCheck || (now - parseInt(lastCheck)) > 4 * 60 * 60 * 1000) {
-            await productionNotificationService.checkAndSendNotifications(currentUser.uid);
-            localStorage.setItem(`last_auto_check_${currentUser.uid}`, now.toString());
-          }
+        if (!isEnabled || Notification.permission !== 'granted') return;
+        
+        // Check if we've already done an auto-check recently (prevent spam)
+        const lastAutoCheck = localStorage.getItem(`last_auto_check_${currentUser.uid}`);
+        const now = Date.now();
+        const fourHours = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+        
+        if (lastAutoCheck && (now - parseInt(lastAutoCheck)) < fourHours) return;
+        
+        // Perform auto-check
+        const result = await productionNotificationService.checkAndSendNotifications(currentUser.uid);
+        
+        if (result.success && result.notificationsSent > 0) {
+          // Show subtle success message
+          setMessage({ 
+            type: 'success', 
+            text: `📚 Found ${result.notificationsSent} due book${result.notificationsSent !== 1 ? 's' : ''} - notifications sent!` 
+          });
+          setTimeout(() => setMessage({ type: '', text: '' }), 4000);
         }
+        
+        // Update last check time
+        localStorage.setItem(`last_auto_check_${currentUser.uid}`, now.toString());
+        
       } catch (error) {
-        // Silent fail
+        // Silent fail - don't disturb user experience
+        if (import.meta.env.DEV) {
+          console.error('Auto-check failed:', error);
+        }
       }
     };
 
-    if (books.length > 0 && !loading) {
-      setTimeout(autoCheckNotifications, 3000);
-    }
-  }, [currentUser, books, loading]);
+    // Run auto-check 2 seconds after books load (give UI time to render)
+    const timeoutId = setTimeout(autoCheckNotifications, 2000);
+    
+    return () => clearTimeout(timeoutId);
+  }, [currentUser, books]);
 
   // Handle book reissue
   const handleReissue = async (book, event) => {
-  event.stopPropagation();
-  try {
-    setReissuingBook(book.id);
-    setError(null);
-    
-    // Calculate new due date (14 days from today) - same as BookDetailsPage
-    const today = new Date();
-    const newDueDate = new Date(today);
-    newDueDate.setDate(today.getDate() + 14);
-    
-    // Update the existing book with new due date - same method as BookDetailsPage
-    const updatedData = {
-      dueDate: newDueDate.toISOString(),
-      reissuedAt: new Date().toISOString(),
-      reissueCount: (book.reissueCount || 0) + 1
-    };
-    
-    await bookService.updateBook(book.id, updatedData); // <- FIXED: Use updateBook instead
-    
-    // Refresh the books list
-    const userBooks = await bookService.getUserBooks(currentUser.uid);
-    setBooks(userBooks);
-    
-    setMessage({ 
-      type: 'success', 
-      text: `"${book.title}" has been reissued! New due date: ${bookUtils.formatDate(newDueDate.toISOString())}` 
-    });
-    setTimeout(() => setMessage({ type: '', text: '' }), 4000);
-    
-  } catch (error) {
-    setError('Failed to reissue book. Please try again.');
-    if (import.meta.env.DEV) {
-      console.error('Error reissuing book:', error);
+    event.stopPropagation();
+    try {
+      setReissuingBook(book.id);
+      setError(null);
+      
+      // Calculate new due date (14 days from today)
+      const today = new Date();
+      const newDueDate = new Date(today);
+      newDueDate.setDate(today.getDate() + 14);
+      
+      // Update the existing book with new due date
+      const updatedData = {
+        dueDate: newDueDate.toISOString(),
+        reissuedAt: new Date().toISOString(),
+        reissueCount: (book.reissueCount || 0) + 1
+      };
+      
+      await bookService.updateBook(book.id, updatedData);
+      
+      // Refresh the books list
+      const userBooks = await bookService.getUserBooks(currentUser.uid);
+      setBooks(userBooks);
+      
+      setMessage({ 
+        type: 'success', 
+        text: `"${book.title}" has been reissued! New due date: ${bookUtils.formatDate(newDueDate.toISOString())}` 
+      });
+      setTimeout(() => setMessage({ type: '', text: '' }), 4000);
+      
+    } catch (error) {
+      setError('Failed to reissue book. Please try again.');
+      if (import.meta.env.DEV) {
+        console.error('Error reissuing book:', error);
+      }
+    } finally {
+      setReissuingBook(null);
     }
-  } finally {
-    setReissuingBook(null);
-  }
-};
+  };
 
-  // Updated handleManualCheck with mobile debug
-const handleManualCheck = async () => {
-  console.log('🚨🚨🚨 BUTTON CLICKED - Manual check starting 🚨🚨🚨');
-  try {
-    setChecking(true);
-    console.log('🚨 About to call checkAndSendNotifications...');
-    
-    // First check if notifications are enabled at all
-    const isEnabled = await productionNotificationService.isEnabled(currentUser.uid);
-    
-    if (!isEnabled) {
-      const enableResult = await productionNotificationService.requestPermission(currentUser.uid);
-      if (!enableResult.success) {
+  // Manual notification check
+  const handleManualCheck = async () => {
+    try {
+      setChecking(true);
+      
+      // Check if notifications are enabled
+      const isEnabled = await productionNotificationService.isEnabled(currentUser.uid);
+      
+      if (!isEnabled) {
+        const enableResult = await productionNotificationService.requestPermission(currentUser.uid);
+        if (!enableResult.success) {
+          setMessage({ 
+            type: 'error', 
+            text: 'Please enable notifications in your browser settings to receive reminders.' 
+          });
+          return;
+        }
+      }
+      
+      if (Notification.permission !== 'granted') {
         setMessage({ 
           type: 'error', 
-          text: 'Please enable notifications in your browser settings to receive reminders.' 
+          text: 'Notification permission not granted. Please enable notifications in your browser.' 
         });
         return;
       }
+      
+      // Check and send notifications
+      const result = await productionNotificationService.checkAndSendNotifications(currentUser.uid);
+      
+      if (result.success && result.notificationsSent > 0) {
+        setMessage({ 
+          type: 'success', 
+          text: `Sent ${result.notificationsSent} notification${result.notificationsSent !== 1 ? 's' : ''} for upcoming due dates` 
+        });
+      } else {
+        setMessage({ 
+          type: 'success', 
+          text: 'All books checked - no notifications needed right now' 
+        });
+      }
+      
+      setTimeout(() => setMessage({ type: '', text: '' }), 4000);
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to check notifications' });
+      if (import.meta.env.DEV) {
+        console.error('Manual check error:', error);
+      }
+    } finally {
+      setChecking(false);
     }
-    
-    if (Notification.permission !== 'granted') {
-      setMessage({ 
-        type: 'error', 
-        text: 'Notification permission not granted. Please enable notifications in your browser.' 
-      });
-      return;
-    }
-    
-    // Get debug info before checking notifications
-    const result = await productionNotificationService.checkAndSendNotifications(currentUser.uid);
-    console.log('🚨 checkAndSendNotifications result:', result);
-
-    
-    if (result.success && result.notificationsSent > 0) {
-      setMessage({ 
-        type: 'success', 
-        text: `Sent ${result.notificationsSent} notification${result.notificationsSent !== 1 ? 's' : ''} for upcoming due dates` 
-      });
-    } else {
-      setMessage({ 
-        type: 'success', 
-        text: 'All books checked - no notifications needed right now' 
-      });
-    }
-    
-    setTimeout(() => setMessage({ type: '', text: '' }), 4000);
-  } catch (error) {
-    console.error('Manual check error:', error);
-    setMessage({ type: 'error', text: 'Failed to check notifications' });
-    console.error('🚨 Manual check error:', error);
-  } finally {
-    setChecking(false);
-  }
-};
-
-
+  };
 
   // Sort books based on selected criteria
   const sortBooks = (books, criteria) => {
@@ -263,32 +275,12 @@ const handleManualCheck = async () => {
       </div>
     );
   }
-const testMobileNotification = async () => {
-  console.log('🔥 Testing mobile notification...');
-  
-  if ('serviceWorker' in navigator) {
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification('📱 Mobile Test', {
-        body: 'This is a test notification for mobile',
-        icon: '/icons/icon-192x192.png',
-        tag: 'mobile-test'
-      });
-      console.log('🔥 Mobile notification sent successfully!');
-    } catch (error) {
-      console.error('🔥 Mobile notification failed:', error);
-    }
-  } else {
-    console.log('🔥 Service worker not supported');
-  }
-};
-
 
   return (
     <div className="min-h-screen bg-theme-bg overflow-x-hidden">
       <div className="layout-container pb-6">
         {/* Header */}
-        <div className=" pb-4 sm:pb-6">
+        <div className="pb-4 sm:pb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="flex-1 min-w-0">
               <h1 className="text-mobile-xl sm:text-mobile-2xl font-heading font-bold text-theme-primary flex items-center">
@@ -302,24 +294,18 @@ const testMobileNotification = async () => {
               </p>
             </div>
             
-            <div className="flex items-center justify-around gap-2 sm:gap-3 flex-shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleManualCheck}
                 loading={checking}
                 icon={Bell}
-                className="cursor-pointer border border-theme-border hover:border-accent-primary "
+                className="cursor-pointer border border-theme-border hover:border-accent-primary"
               >
                 Check Notifications
               </Button>
 
-              <button 
-  onClick={testMobileNotification} 
-  className="px-4 py-2 bg-purple-500 text-white rounded ml-2"
->
-  🔥 Test Mobile
-</button>
               <Button
                 onClick={() => navigate('/add-book')}
                 icon={Plus}

@@ -1,6 +1,6 @@
 // src/services/productionNotificationService.js
 import { getToken, onMessage } from 'firebase/messaging';
-import { doc, updateDoc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { messaging, db } from '../config/firebase';
 import { bookUtils } from '../utils/bookUtils'; 
 import { bookService } from '../services/bookService'; 
@@ -12,8 +12,8 @@ class ProductionNotificationService {
   }
 
   isMobile() {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
 
   // Request notification permission and setup FCM
   async requestPermission(userId) {
@@ -26,26 +26,24 @@ class ProductionNotificationService {
           error: 'Please enable notifications in app or browser settings.'
         };
       }
-        // Mobile-specific FCM setup
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (isMobile && 'serviceWorker' in navigator) {
-      // Register Firebase messaging service worker for mobile
-      try {
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        console.log('Mobile FCM SW registered:', registration);
-      } catch (swError) {
-        console.warn('FCM SW registration failed:', swError);
-        // Continue without FCM - use browser notifications
-      }
-    }
 
-      // Ensure user books are fetched (used elsewhere in notifications)
+      // Mobile-specific FCM setup
+      if (this.isMobile() && 'serviceWorker' in navigator) {
+        try {
+          await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        } catch (swError) {
+          // Continue without FCM - use browser notifications
+          if (import.meta.env.DEV) {
+            console.warn('FCM SW registration failed:', swError);
+          }
+        }
+      }
+
+      // Ensure user books are accessible
       try {
         await bookService.getUserBooks(userId);
       } catch (error) {
         if (error.code === 'unavailable' || error.message.includes('ERR_BLOCKED_BY_CLIENT')) {
-          console.warn('Firebase blocked by adblocker - using cached data');
           await bookService.getCachedUserBooks(userId);
         } else {
           throw error;
@@ -171,8 +169,7 @@ class ProductionNotificationService {
         body: payload.notification.body,
         icon: '/icons/icon-192x192.png',
         tag: `fcm-${payload.data?.bookId || Date.now()}`,
-        data: payload.data,
-        requireInteraction: true
+        data: payload.data
       });
 
       notification.onclick = () => {
@@ -187,95 +184,87 @@ class ProductionNotificationService {
     }
   }
 
-  // REPLACE getUserBooksWithDueDates in productionNotificationService.js
-async getUserBooksWithDueDates(userId) {
-  try {
-    // Use the SAME method that works in your dashboard
-    const books = await bookService.getUserBooks(userId);
-    
-    return books.map(book => {
-      // Use IDENTICAL logic to what your UI uses - no timestamp processing!
-      const daysRemaining = bookUtils.calculateDaysRemaining(book.dueDate);
-      const currentFine = bookUtils.calculateFineSync(book.dueDate, book.finePerDay || 1);
-      const statusInfo = bookUtils.getStatusInfo(daysRemaining, currentFine);
-      const needsNotification = this.shouldSendNotification(daysRemaining);
+  // Get user books with notification data
+  async getUserBooksWithDueDates(userId) {
+    try {
+      const books = await bookService.getUserBooks(userId);
       
-      return {
-        ...book,
-        daysRemaining,
-        needsNotification,
-        dueDateFormatted: bookUtils.formatDate(book.dueDate),
-        fine: currentFine,
-        status: statusInfo
-      };
-    });
-  } catch (error) {
-    console.error('Error getting user books with due dates:', error);
-    return [];
+      return books.map(book => {
+        const daysRemaining = bookUtils.calculateDaysRemaining(book.dueDate);
+        const currentFine = bookUtils.calculateFineSync(book.dueDate, book.finePerDay || 1);
+        const statusInfo = bookUtils.getStatusInfo(daysRemaining, currentFine);
+        const needsNotification = this.shouldSendNotification(daysRemaining);
+        
+        return {
+          ...book,
+          daysRemaining,
+          needsNotification,
+          dueDateFormatted: bookUtils.formatDate(book.dueDate),
+          fine: currentFine,
+          status: statusInfo
+        };
+      });
+    } catch (error) {
+      if (import.meta.env.DEV) console.error('Error getting user books with due dates:', error);
+      return [];
+    }
   }
-}
 
-
+  // Determine if book needs notification
   shouldSendNotification(daysRemaining) {
     return daysRemaining === 3 || daysRemaining === 1 || daysRemaining === 0 || daysRemaining < 0;
   }
-  
 
-  // Manual notification check
+  // Main notification check function
   async checkAndSendNotifications(userId) {
-    console.log('🚨🚨🚨 CHECK AND SEND NOTIFICATIONS CALLED 🚨🚨🚨');
-  console.log('🚨 UserId:', userId);
-  console.log('🚨 Current time:', new Date().toString());
     try {
-       console.log('🚨 About to call isEnabled...');
-    const isEnabled = await this.isEnabled(userId);
-    console.log('🚨 isEnabled returned:', isEnabled);
+      const isEnabled = await this.isEnabled(userId);
       const permission = Notification.permission;
-      const isMobile = this.isMobile();
-
-      console.log('Notification Debug:', { isEnabled, permission, isMobile, userAgent: navigator.userAgent });
 
       if (!isEnabled) {
-        return { success: false, error: 'Notifications not enabled', debug: { isEnabled, permission, isMobile } };
+        return { 
+          success: false, 
+          error: 'Notifications not enabled'
+        };
       }
+      
       if (permission !== 'granted') {
-        return { success: false, error: 'Permission not granted', debug: { isEnabled, permission, isMobile } };
+        return { 
+          success: false, 
+          error: 'Permission not granted'
+        };
       }
 
       const books = await this.getUserBooksWithDueDates(userId);
       const booksNeedingNotification = books.filter(b => b.needsNotification);
-      console.log('🔍 MOBILE DEBUG:', {
-  totalBooks: books.length,
-  booksNeedingNotification: booksNeedingNotification.length,
-  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  userAgent: navigator.userAgent,
-  isMobile: this.isMobile(),
-  books: books.map(b => ({
-    title: b.title,
-    dueDate: b.dueDateFormatted,
-    daysRemaining: b.daysRemaining,
-    needsNotification: b.needsNotification
-  }))
-});
 
+      // Development logging
       if (import.meta.env.DEV) {
-        console.log('🔍 Books analysis:', {
+        console.log('Notification check:', {
           totalBooks: books.length,
           booksNeedingNotification: booksNeedingNotification.length,
-          books: books.map(b => ({ title: b.title, daysRemaining: b.daysRemaining, needsNotification: b.needsNotification, dueDate: b.dueDateFormatted }))
+          books: books.map(b => ({ 
+            title: b.title, 
+            daysRemaining: b.daysRemaining, 
+            needsNotification: b.needsNotification 
+          }))
         });
       }
 
       let sentCount = 0;
       for (const book of booksNeedingNotification) {
         try {
-          await this.sendImmediateBookNotification(book);
-          sentCount++;
+          const sent = await this.sendImmediateBookNotification(book);
+          if (sent) sentCount++;
+          
+          // Add delay between notifications to prevent spam
           if (booksNeedingNotification.length > 1) {
             await new Promise(resolve => setTimeout(resolve, 800));
           }
         } catch (error) {
-          if (import.meta.env.DEV) console.error(`Failed to send notification for ${book.title}:`, error);
+          if (import.meta.env.DEV) {
+            console.error(`Failed to send notification for ${book.title}:`, error);
+          }
         }
       }
 
@@ -289,119 +278,135 @@ async getUserBooksWithDueDates(userId) {
         books: booksNeedingNotification
       };
     } catch (error) {
-      return { success: false, error: error.message || 'Manual check failed' };
+      if (import.meta.env.DEV) console.error('Notification check failed:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Notification check failed' 
+      };
     }
   }
 
-  
-async sendImmediateBookNotification(book) {
-  try {
-    if (!book || !book.title) {
-      console.error('Invalid book data:', book);
-      return false;
-    }
+  // Send immediate notification for a book
+  async sendImmediateBookNotification(book) {
+    try {
+      if (!book || !book.title) {
+        if (import.meta.env.DEV) console.error('Invalid book data:', book);
+        return false;
+      }
 
-    const title = `📚 BookMate: ${book.title}`;
-    let body = '';
-    
-    if (book.daysRemaining < 0) {
-      const daysOverdue = Math.abs(book.daysRemaining);
-      body = `Overdue by ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''}! Fine: ₹${book.fine || 0}`;
-    } else if (book.daysRemaining === 0) {
-      body = `Due today! Return to avoid fine.`;
-    } else if (book.daysRemaining === 1) {
-      body = `Due tomorrow! Don't forget to return.`;
-    } else {
-      body = `Due in ${book.daysRemaining} days. Plan your return!`;
-    }
+      const title = `📚 BookMate: ${book.title}`;
+      let body = '';
+      
+      // Create notification message based on status
+      if (book.daysRemaining < 0) {
+        const daysOverdue = Math.abs(book.daysRemaining);
+        body = `Overdue by ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''}! Fine: ₹${book.fine || 0}`;
+      } else if (book.daysRemaining === 0) {
+        body = `Due today! Return to avoid fine.`;
+      } else if (book.daysRemaining === 1) {
+        body = `Due tomorrow! Don't forget to return.`;
+      } else {
+        body = `Due in ${book.daysRemaining} days. Plan your return!`;
+      }
 
-    // MOBILE-FIRST: Try service worker notifications first
-    if ('serviceWorker' in navigator) {
-      console.log('🔥 Using service worker notification (mobile-friendly)');
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        await registration.showNotification(title, {
+      // Mobile-first approach: Try service worker notifications first
+      if ('serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          await registration.showNotification(title, {
+            body,
+            icon: '/icons/icon-192x192.png',
+            badge: '/icons/icon-72x72.png',
+            tag: `book-${book.id || 'unknown'}`,
+            data: {
+              bookId: book.id || null,
+              bookTitle: book.title || 'Unknown Book',
+              dueDate: book.dueDateFormatted || book.dueDate,
+              daysRemaining: book.daysRemaining,
+              fine: book.fine || 0
+            },
+            requireInteraction: true,
+            vibrate: [200, 100, 200],
+            actions: [
+              {
+                action: 'view',
+                title: 'View Book'
+              }
+            ]
+          });
+          return true;
+        } catch (swError) {
+          if (import.meta.env.DEV) {
+            console.error('Service worker notification failed:', swError);
+          }
+        }
+      }
+
+      // Fallback: Browser notification (desktop)
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification(title, {
           body,
           icon: '/icons/icon-192x192.png',
-          badge: '/icons/icon-72x72.png',
-          tag: `book-${book.id || 'unknown'}`,
-          data: {
-            bookId: book.id || null,
-            bookTitle: book.title || 'Unknown Book',
-            dueDate: book.dueDateFormatted || book.dueDate,
-            daysRemaining: book.daysRemaining,
-            fine: book.fine || 0
-          },
-          requireInteraction: true,
-          vibrate: [200, 100, 200], // Mobile vibration
-          actions: [
-            {
-              action: 'view',
-              title: 'View Book'
-            }
-          ]
+          tag: `book-${book.id || 'unknown'}`
         });
+        
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+        
+        setTimeout(() => notification.close(), 8000);
         return true;
-      } catch (swError) {
-        console.error('Service worker notification failed:', swError);
-        // Fall through to browser notification
       }
+
+      return false;
+
+    } catch (error) {
+      if (import.meta.env.DEV) console.error('Error sending notification:', error);
+      return false;
     }
-
-    // FALLBACK: Browser notification (desktop)
-    if ('Notification' in window && Notification.permission === 'granted') {
-      console.log('🔥 Using browser notification (desktop fallback)');
-      const notification = new Notification(title, {
-        body,
-        icon: '/icons/icon-192x192.png',
-        tag: `book-${book.id || 'unknown'}`
-      });
-      
-      notification.onclick = () => {
-        window.focus();
-        notification.close();
-      };
-      
-      setTimeout(() => notification.close(), 8000);
-      return true;
-    }
-
-    console.warn('No notification method available');
-    return false;
-
-  } catch (error) {
-    console.error('Error sending notification:', error);
-    return false;
   }
-}
 
-
-
+  // Update last notification check time
   async updateLastCheckTime(userId) {
     try {
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, { lastNotificationCheck: serverTimestamp() });
     } catch {
+      // Fallback to localStorage
       localStorage.setItem(`lastCheck_${userId}`, Date.now().toString());
     }
   }
 
+  // Send test notification
   async sendTestNotification() {
     try {
-      const notification = new Notification('🏭 BookMate Production', {
-        body: "Production notifications are active! You'll get reminders for due books.",
-        icon: '/icons/icon-192x192.png',
-        tag: 'production-test'
-      });
-      setTimeout(() => notification.close(), 5000);
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.showNotification('📱 BookMate Test', {
+          body: 'Test notification - your notifications are working!',
+          icon: '/icons/icon-192x192.png',
+          tag: 'test-notification'
+        });
+      } else {
+        const notification = new Notification('📱 BookMate Test', {
+          body: 'Test notification - your notifications are working!',
+          icon: '/icons/icon-192x192.png',
+          tag: 'test-notification'
+        });
+        setTimeout(() => notification.close(), 5000);
+      }
+      
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
     }
   }
 
+  // Disable notifications
   async disableNotifications(userId) {
     try {
+      // Update Firestore
       try {
         const userRef = doc(db, 'users', userId);
         await updateDoc(userRef, {
@@ -413,8 +418,10 @@ async sendImmediateBookNotification(book) {
         if (import.meta.env.DEV) console.warn('Firestore disable failed:', firestoreError);
       }
 
+      // Clean up local storage
       localStorage.removeItem(`production_notifications_${userId}`);
 
+      // Clean up listeners
       if (this.foregroundUnsubscribe) {
         this.foregroundUnsubscribe();
         this.foregroundUnsubscribe = null;
@@ -427,6 +434,7 @@ async sendImmediateBookNotification(book) {
     }
   }
 
+  // Get platform information
   getPlatformInfo() {
     return {
       userAgent: navigator.userAgent,
@@ -438,41 +446,33 @@ async sendImmediateBookNotification(book) {
     };
   }
 
+  // Check if notifications are supported
   isSupported() {
     return 'Notification' in window && 'serviceWorker' in navigator;
   }
 
+  // Get current permission status
   getPermissionStatus() {
     return Notification.permission;
   }
 
+  // Check if notifications are enabled for user
   async isEnabled(userId) {
-  console.log('🔍 DEBUG isEnabled() called for:', userId);
-  
-  try {
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
-    if (userDoc.exists()) {
-      const firestoreEnabled = userDoc.data().notificationsEnabled || false;
-      console.log('🔍 Firestore notificationsEnabled:', firestoreEnabled);
-      console.log('🔍 Full user doc data:', userDoc.data());
-      return firestoreEnabled;
-    } else {
-      console.log('🔍 User document does not exist');
+    try {
+      const userRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        return userDoc.data().notificationsEnabled || false;
+      }
+    } catch (error) {
+      if (import.meta.env.DEV) console.warn('Firestore check failed:', error);
     }
-  } catch (error) {
-    console.log('🔍 Firestore check failed:', error);
+
+    // Fallback to localStorage
+    const settings = localStorage.getItem(`production_notifications_${userId}`);
+    return settings ? JSON.parse(settings).enabled : false;
   }
-
-  const settings = localStorage.getItem(`production_notifications_${userId}`);
-  console.log('🔍 localStorage settings:', settings);
-  const localEnabled = settings ? JSON.parse(settings).enabled : false;
-  console.log('🔍 localStorage enabled:', localEnabled);
-  
-  return localEnabled;
-}
-
-
 }
 
 export const productionNotificationService = new ProductionNotificationService();
