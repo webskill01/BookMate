@@ -223,8 +223,13 @@ async getUserBooksWithDueDates(userId) {
 
   // Manual notification check
   async checkAndSendNotifications(userId) {
+    console.log('🚨🚨🚨 CHECK AND SEND NOTIFICATIONS CALLED 🚨🚨🚨');
+  console.log('🚨 UserId:', userId);
+  console.log('🚨 Current time:', new Date().toString());
     try {
-      const isEnabled = await this.isEnabled(userId);
+       console.log('🚨 About to call isEnabled...');
+    const isEnabled = await this.isEnabled(userId);
+    console.log('🚨 isEnabled returned:', isEnabled);
       const permission = Notification.permission;
       const isMobile = this.isMobile();
 

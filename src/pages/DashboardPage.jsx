@@ -9,12 +9,13 @@ import { bookService } from '../services/bookService';
 import { bookUtils } from '../utils/bookUtils';
 import { productionNotificationService } from '../services/productionNotificationService';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-
+console.log('🚨🚨🚨 DASHBOARD PAGE LOADED 🚨🚨🚨', new Date());
 // Import utility components
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
 
 const DashboardPage = () => {
+  console.log('🚨🚨🚨 DASHBOARD COMPONENT RENDERED 🚨🚨🚨');
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -131,8 +132,10 @@ const DashboardPage = () => {
 
   // Updated handleManualCheck with mobile debug
 const handleManualCheck = async () => {
+  console.log('🚨🚨🚨 BUTTON CLICKED - Manual check starting 🚨🚨🚨');
   try {
     setChecking(true);
+    console.log('🚨 About to call checkAndSendNotifications...');
     
     // First check if notifications are enabled at all
     const isEnabled = await productionNotificationService.isEnabled(currentUser.uid);
@@ -158,6 +161,7 @@ const handleManualCheck = async () => {
     
     // Get debug info before checking notifications
     const result = await productionNotificationService.checkAndSendNotifications(currentUser.uid);
+    console.log('🚨 checkAndSendNotifications result:', result);
 
     
     if (result.success && result.notificationsSent > 0) {
@@ -176,6 +180,7 @@ const handleManualCheck = async () => {
   } catch (error) {
     console.error('Manual check error:', error);
     setMessage({ type: 'error', text: 'Failed to check notifications' });
+    console.error('🚨 Manual check error:', error);
   } finally {
     setChecking(false);
   }
