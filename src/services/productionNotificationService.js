@@ -26,9 +26,14 @@ class ProductionNotificationService {
           error: 'Please enable notifications in app or browser settings.'
         };
       }
-
+      // Development: Skip service worker registration since file doesn't exist
+    if (import.meta.env.DEV) {
+      if (import.meta.env.DEV) {
+        console.log('🔧 Development mode: Skipping FCM service worker registration');
+      }
+    } 
       // Mobile-specific FCM setup
-      if (this.isMobile() && 'serviceWorker' in navigator) {
+      else if (this.isMobile() && 'serviceWorker' in navigator) {
         try {
           await navigator.serviceWorker.register('/firebase-messaging-sw.js');
         } catch (swError) {

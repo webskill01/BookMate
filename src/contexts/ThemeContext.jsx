@@ -1,4 +1,4 @@
-// src/contexts/ThemeContext.jsx
+// src/contexts/ThemeContext.jsx - FIXED VERSION
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext();
@@ -12,36 +12,64 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  // Initialize theme from localStorage or default to dark
-  const [isDark, setIsDark] = useState(() => {
+  // Initialize theme - DEFAULT TO LIGHT MODE
+  const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('bookmate-theme');
-      return saved ? JSON.parse(saved) : true; // Default to dark
+      return saved || 'light'; // Default to light mode
     }
-    return true;
+    return 'light';
   });
 
-  // Save theme preference and apply to document
-  useEffect(() => {
-    localStorage.setItem('bookmate-theme', JSON.stringify(isDark));
-    
-    // Apply theme to document root
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.add('light');
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDark]);
+  const [systemPrefersDark, setSystemPrefersDark] = useState(false);
 
+  // Set up system preference listener
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setSystemPrefersDark(mediaQuery.matches);
+
+    const handleChange = (e) => setSystemPrefersDark(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  // Apply theme to document
+  useEffect(() => {
+    const root = document.documentElement;
+    
+    // Remove existing theme classes
+    root.classList.remove('dark', 'light');
+    
+    // Apply theme based on setting
+    if (theme === 'system') {
+      root.classList.add(systemPrefersDark ? 'dark' : 'light');
+    } else {
+      root.classList.add(theme);
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('bookmate-theme', theme);
+    
+  }, [theme, systemPrefersDark]);
+
+  // Helper getters for backwards compatibility
+  const isDark = theme === 'system' ? systemPrefersDark : theme === 'dark';
+  
+  // Legacy toggle function for backwards compatibility
   const toggleTheme = () => {
-    setIsDark(prev => !prev);
+    setTheme(current => current === 'dark' ? 'light' : 'dark');
   };
 
   const value = {
+    // New API
+    theme,
+    setTheme,
     isDark,
-    setIsDark,
+    systemPrefersDark,
+    
+    // Legacy API for backwards compatibility
+    setIsDark: (isDarkValue) => setTheme(isDarkValue ? 'dark' : 'light'),
     toggleTheme
   };
 

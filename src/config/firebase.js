@@ -56,25 +56,29 @@ try {
 }
 
 // Initialize Firebase Messaging (optional)
+// Initialize Firebase Messaging (optional)
 const initializeMessaging = async () => {
   try {
     const supported = await isSupported();
     if (supported && 'serviceWorker' in navigator) {
-      // Register the FCM service worker
+      
+      // DEVELOPMENT: Skip FCM service worker registration
+      if (import.meta.env.DEV) {
+        messaging = getMessaging(app);
+        console.log('✅ Firebase messaging initialized (dev mode - no SW)');
+        return;
+      }
+      
+      // PRODUCTION: Register the FCM service worker
       const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
         scope: '/firebase-cloud-messaging-push-scope'
       });
       
-      if (import.meta.env.DEV) {
-        console.log('✅ Firebase messaging service worker registered:', registration.scope);
-      }
+      console.log('✅ Firebase messaging service worker registered:', registration.scope);
       
       // Initialize messaging
       messaging = getMessaging(app);
-      
-      if (import.meta.env.DEV) {
-        console.log('✅ Firebase messaging initialized successfully');
-      }
+      console.log('✅ Firebase messaging initialized successfully');
     }
   } catch (error) {
     // Silent fail in production
@@ -83,6 +87,7 @@ const initializeMessaging = async () => {
     }
   }
 };
+
 
 // Initialize messaging
 initializeMessaging();

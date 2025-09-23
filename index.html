@@ -148,12 +148,11 @@
       max-width: 400px;
       padding: 20px;
     }
-    
-    /* FIXED: Properly Centered App Icon */
+    /* OPTIMIZED: App Icon with Proper Spacing */
     .bookmate-loading-icon {
       width: 80px;
       height: 80px;
-      margin: 0 auto 24px auto;
+      margin: 0 auto 48px auto; /* Increased bottom margin for better spacing */
       position: relative;
       background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
       border-radius: 20px;
@@ -167,24 +166,27 @@
       flex-shrink: 0;
     }
     
-    /* Fallback SVG BookMark Icon */
+    /* SVG BookMark Icon with No Bottom Margin */
     .bookmate-loading-icon svg {
       width: 40px;
       height: 40px;
       color: white;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
       display: block;
+      margin: 0; /* Removed margin-bottom that was causing extra space */
     }
     
-    /* If app icon exists, hide SVG and center image */
+    /* App Icon Image Styling */
     .bookmate-loading-icon img {
       width: 60px;
       height: 60px;
       border-radius: 12px;
       display: block;
       object-fit: contain;
+      margin: 0; /* Ensure no extra margins */
     }
     
+    /* Hide SVG when image is present */
     .bookmate-loading-icon img + svg {
       display: none;
     }
@@ -210,7 +212,7 @@
       }
     }
     
-    /* FIXED: Perfectly Centered Loading Spinner */
+    /* OPTIMIZED: Loading Spinner with Better Spacing */
     .bookmate-loading-spinner {
       width: 50px;
       height: 50px;
@@ -219,11 +221,9 @@
       border-top-color: #22c55e;
       border-right-color: #16a34a;
       animation: spin 1.2s linear infinite;
-      margin: 0 auto 24px auto;
+      margin: 0 auto 40px auto; /* Consistent spacing: no top margin, 40px bottom */
       position: relative;
       flex-shrink: 0;
-      left: 0;
-      right: 0;
     }
     
     .bookmate-loading-spinner::after {
@@ -244,11 +244,11 @@
       100% { transform: rotate(360deg); }
     }
     
-    /* Typography - All Centered */
+    /* OPTIMIZED: Typography with Better Spacing */
     .bookmate-loading-title {
       font-size: 28px;
       font-weight: 700;
-      margin: 0 auto 8px auto;
+      margin: 0 auto 12px auto; /* Increased spacing after title */
       background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -262,7 +262,7 @@
       font-size: 16px;
       font-weight: 500;
       color: #22c55e;
-      margin: 0 auto 16px auto;
+      margin: 0 auto 24px auto; /* Increased spacing after subtitle */
       opacity: 0.9;
       text-align: center;
       display: block;
@@ -277,6 +277,7 @@
       align-items: center;
       justify-content: center;
       margin: 0 auto;
+      line-height: 1.4; /* Added line height for better text spacing */
     }
     
     @keyframes fadeInOut {
@@ -284,13 +285,13 @@
       50% { opacity: 1; }
     }
     
-    /* FIXED: Centered Loading Progress Dots */
+    /* OPTIMIZED: Loading Dots with Better Alignment */
     .bookmate-loading-dots {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      margin-left: 4px;
+      gap: 5px; /* Slightly increased gap between dots */
+      margin-left: 6px; /* Increased margin from text */
     }
     
     .bookmate-loading-dots span {
@@ -310,59 +311,129 @@
       30% { opacity: 1; transform: scale(1.2); }
     }
     
-    /* Responsive Design with Better Centering */
+    /* OPTIMIZED: Mobile Responsive Design */
     @media (max-width: 480px) {
       #loading-content {
-        padding: 15px;
+        padding: 20px 15px; /* Added top/bottom padding for mobile */
+        gap: 8px; /* Added gap between flex items if container uses flex */
       }
       
       .bookmate-loading-icon {
         width: 70px;
         height: 70px;
         border-radius: 16px;
-        margin: 0 auto 20px auto;
+        margin: 0 auto 36px auto; /* Proportional spacing for mobile */
       }
       
       .bookmate-loading-icon svg {
         width: 36px;
         height: 36px;
+        margin: 0;
       }
       
       .bookmate-loading-icon img {
         width: 50px;
         height: 50px;
         border-radius: 10px;
+        margin: 0;
       }
       
       .bookmate-loading-spinner {
         width: 45px;
         height: 45px;
-        margin: 0 auto 20px auto;
+        margin: 0 auto 32px auto; /* Proportional spacing for mobile */
       }
       
       .bookmate-loading-title {
         font-size: 24px;
-        margin: 0 auto 6px auto;
+        margin: 0 auto 10px auto;
       }
       
       .bookmate-loading-subtitle {
         font-size: 14px;
-        margin: 0 auto 14px auto;
+        margin: 0 auto 20px auto;
+      }
+      
+      .bookmate-loading-text {
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      
+      .bookmate-loading-dots {
+        gap: 4px;
+        margin-left: 5px;
       }
     }
     
-    /* Smooth Fade Out */
+    /* Ultra-small screens optimization */
+    @media (max-width: 320px) {
+      .bookmate-loading-icon {
+        margin: 0 auto 40px auto;
+      }
+      
+      .bookmate-loading-spinner {
+        margin: 10px auto 24px auto;
+      }
+      
+      .bookmate-loading-title {
+        font-size: 22px;
+        margin: 0 auto 8px auto;
+      }
+      
+      .bookmate-loading-subtitle {
+        font-size: 13px;
+        margin: 0 auto 16px auto;
+      }
+    }
+    
+    /* OPTIMIZED: Smooth Transitions */
     .bookmate-loading-fade-out {
       opacity: 0;
       transform: translateY(-10px);
       transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
-    /* Force centering for all flex children */
+    /* OPTIMIZED: Container Spacing */
+    #loading-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px 20px; /* Added padding to prevent edge touching */
+    }
+    
+    /* Force proper alignment for all children */
     #loading-content > * {
       align-self: center;
     }
+    
+    /* Add breathing room between sections */
+    .bookmate-loading-icon,
+    .bookmate-loading-spinner,
+    .bookmate-loading-title,
+    .bookmate-loading-subtitle {
+      margin-bottom: var(--spacing, 24px);
+    }
+    
+    /* Override margins for specific spacing hierarchy */
+    .bookmate-loading-icon {
+      --spacing: 48px;
+    }
+    
+    .bookmate-loading-spinner {
+      --spacing: 40px;
+    }
+    
+    .bookmate-loading-title {
+      --spacing: 12px;
+    }
+    
+    .bookmate-loading-subtitle {
+      --spacing: 24px;
+    }
   </style>
+
 
   <!-- Suppress browser extension errors -->
   <script>

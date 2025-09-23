@@ -1,4 +1,4 @@
-// src/pages/SettingsPage.jsx - FIXED VERSION
+// src/pages/SettingsPage.jsx - OPTIMIZED VERSION
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -12,7 +12,6 @@ import { doc, getDoc, updateDoc, setDoc, collection, query, where, getDocs, writ
 import { updateProfile, updateEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser } from 'firebase/auth';
 import { db } from '../config/firebase';
 
-// Import utility components
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Alert from '../components/ui/Alert';
@@ -20,14 +19,12 @@ import Alert from '../components/ui/Alert';
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
+  const { theme, setTheme, isDark } = useTheme();
   
-  // FIX: Use the correct theme context structure
-  const { isDark, toggleTheme } = useTheme();
-  
-  // Settings state
+  // Settings state - notifications OFF by default
   const [settings, setSettings] = useState({
     finePerDay: 1,
-    notificationsEnabled: true
+    notificationsEnabled: false
   });
   
   // Profile state
@@ -50,10 +47,19 @@ const SettingsPage = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showPermissionPrompt, setShowPermissionPrompt] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
       loadUserData();
+    }
+  }, [currentUser]);
+
+  // Show permission prompt for first-time users
+  useEffect(() => {
+    const hasSeenPrompt = localStorage.getItem(`notification_prompt_${currentUser?.uid}`);
+    if (currentUser && !hasSeenPrompt && Notification.permission === 'default') {
+      setShowPermissionPrompt(true);
     }
   }, [currentUser]);
 
@@ -69,7 +75,8 @@ const SettingsPage = () => {
         const userData = userDoc.data();
         setSettings({
           finePerDay: userData.finePerDay || 1,
-          notificationsEnabled: userData.notificationsEnabled !== false
+          // Check actual notification status, default to false
+          notificationsEnabled: userData.notificationsEnabled === true && Notification.permission === 'granted'
         });
       }
 
@@ -90,26 +97,33 @@ const SettingsPage = () => {
     }
   };
 
-  // Fix: Improved fine rate input handler
+  // Handle permission prompt
+  const handlePermissionPrompt = async (enable) => {
+    localStorage.setItem(`notification_prompt_${currentUser.uid}`, 'seen');
+    setShowPermissionPrompt(false);
+    
+    if (enable) {
+      await handleNotificationToggle();
+    }
+  };
+
+  // Improved fine rate input handler
   const handleFineRateChange = (e) => {
     const value = e.target.value;
     
-    // Allow empty input for better UX while typing
     if (value === '') {
       setSettings(prev => ({ ...prev, finePerDay: '' }));
       return;
     }
     
-    // Parse and validate the number
     const numValue = parseInt(value);
     if (!isNaN(numValue) && numValue >= 1 && numValue <= 50) {
       setSettings(prev => ({ ...prev, finePerDay: numValue }));
     }
   };
 
-  // Fix: Validate fine rate before saving
+  // Validate fine rate before saving
   const saveFineSettings = async () => {
-    // Ensure we have a valid number
     const fineRate = settings.finePerDay === '' ? 1 : settings.finePerDay;
     if (fineRate < 1 || fineRate > 50) {
       setMessage({ type: 'error', text: 'Fine rate must be between ₹1 and ₹50' });
@@ -125,10 +139,8 @@ const SettingsPage = () => {
         updatedAt: new Date().toISOString()
       }, { merge: true });
 
-      // Update existing books
       await updateExistingBooksFineRate(fineRate);
       
-      // Update state to ensure valid number
       setSettings(prev => ({ ...prev, finePerDay: fineRate }));
       
       setMessage({ type: 'success', text: 'Fine settings saved successfully!' });
@@ -164,12 +176,13 @@ const SettingsPage = () => {
     }
   };
 
-  // Handle notification toggle
+  // Handle notification toggle with browser permission integration
   const handleNotificationToggle = async () => {
     try {
-      setLoading(true);
+      setSaving(true);
       
       if (!settings.notificationsEnabled) {
+        // Enable notifications
         const result = await productionNotificationService.requestPermission(currentUser.uid);
         if (result.success) {
           setSettings(prev => ({ ...prev, notificationsEnabled: true }));
@@ -178,6 +191,7 @@ const SettingsPage = () => {
           setMessage({ type: 'error', text: result.error || 'Failed to enable notifications' });
         }
       } else {
+        // Disable notifications
         const result = await productionNotificationService.disableNotifications(currentUser.uid);
         if (result.success) {
           setSettings(prev => ({ ...prev, notificationsEnabled: false }));
@@ -191,7 +205,7 @@ const SettingsPage = () => {
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to update notifications' });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -346,32 +360,6 @@ const SettingsPage = () => {
     }
   };
 
-  // FIX: Handle theme changes correctly
-  const handleThemeChange = (themeValue) => {
-    if (themeValue === 'dark') {
-      if (!isDark) toggleTheme();
-    } else if (themeValue === 'light') {
-      if (isDark) toggleTheme();
-    } else if (themeValue === 'system') {
-      // For system theme, check system preference and toggle if needed
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (systemPrefersDark !== isDark) {
-        toggleTheme();
-      }
-    }
-  };
-
-  // FIX: Get current theme value for UI
-  const getCurrentTheme = () => {
-    // This is a simplified approach - you might need to adjust based on your theme context
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    // If your theme context doesn't track system preference, 
-    // you might need to add that functionality
-    if (isDark) return 'dark';
-    return 'light';
-  };
-
   // Theme options
   const themeOptions = [
     { value: 'light', label: 'Light', icon: Sun },
@@ -389,8 +377,6 @@ const SettingsPage = () => {
       </div>
     );
   }
-
-  const currentTheme = getCurrentTheme();
 
   return (
     <div className="min-h-screen bg-theme-bg">
@@ -640,7 +626,7 @@ const SettingsPage = () => {
             </div>
 
             <div className="space-y-6">
-              {/* Theme Selection - FIXED */}
+              {/* Theme Selection */}
               <div>
                 <label className="block text-theme-primary text-mobile-sm font-medium mb-3">
                   Theme
@@ -649,9 +635,9 @@ const SettingsPage = () => {
                   {themeOptions.map(({ value, label, icon: Icon }) => (
                     <button
                       key={value}
-                      onClick={() => handleThemeChange(value)} // FIX: Use the correct handler
+                      onClick={() => setTheme(value)}
                       className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center space-y-2 ${
-                        currentTheme === value
+                        theme === value
                           ? 'border-accent-primary bg-accent-primary/10 text-accent-primary'
                           : 'border-theme-border bg-theme-card hover:border-accent-primary/50 text-theme-secondary hover:text-theme-primary'
                       }`}
@@ -663,7 +649,7 @@ const SettingsPage = () => {
                 </div>
               </div>
 
-              {/* Fine Settings - FIXED */}
+              {/* Fine Settings */}
               <div>
                 <label className="block text-theme-primary text-mobile-sm font-medium mb-3">
                   Overdue Fine Rate
@@ -676,9 +662,8 @@ const SettingsPage = () => {
                       min="1"
                       max="50"
                       value={settings.finePerDay}
-                      onChange={handleFineRateChange} // FIX: Better input handling
+                      onChange={handleFineRateChange}
                       onBlur={() => {
-                        // FIX: Ensure valid value on blur
                         if (settings.finePerDay === '' || settings.finePerDay < 1) {
                           setSettings(prev => ({ ...prev, finePerDay: 1 }));
                         }
@@ -720,23 +705,22 @@ const SettingsPage = () => {
                     </div>
                     
                     <button
-  onClick={handleNotificationToggle}
-  disabled={loading}
-  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2 focus:ring-offset-theme-bg ${
-    settings.notificationsEnabled
-      ? 'bg-accent-primary shadow-md'
-      : 'bg-theme-border hover:bg-opacity-80'
-  } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
->
-  <span
-    className={`inline-block h-4 w-4 transform rounded-full transition-all duration-300 shadow-sm ${
-      settings.notificationsEnabled 
-        ? 'translate-x-6 bg-white' // White circle against green background
-        : 'translate-x-1 bg-theme-primary' // Dark circle in dark mode, light circle in light mode  
-    }`}
-  />
-</button>
-
+                      onClick={handleNotificationToggle}
+                      disabled={saving}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2 focus:ring-offset-theme-bg ${
+                        settings.notificationsEnabled
+                          ? 'bg-accent-primary shadow-md'
+                          : 'bg-theme-border hover:bg-opacity-80'
+                      } ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full transition-all duration-300 shadow-sm ${
+                          settings.notificationsEnabled 
+                            ? 'translate-x-6 bg-white'
+                            : 'translate-x-1 bg-theme-primary'
+                        }`}
+                      />
+                    </button>
                   </div>
                   
                   {settings.notificationsEnabled && (
@@ -767,7 +751,7 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            <div className="p-4 bg-status-danger/5 rounded-lg border border-status-danger/20">
+            <div className="p-4 bg-status-danger/5 rounded-lg border border-status-danger/50">
               <h3 className="font-semibold text-theme-primary mb-2">Delete Account</h3>
               <p className="text-theme-secondary text-mobile-sm mb-4">
                 This will permanently delete your account and all your books. This action cannot be undone.
@@ -776,7 +760,7 @@ const SettingsPage = () => {
                 variant="ghost"
                 onClick={() => setShowDeleteConfirm(true)}
                 icon={Trash2}
-                className="text-status-danger hover:bg-status-danger/10 border-status-danger/20"
+                className="text-status-danger hover:bg-status-danger/10 border border-status-danger/40 hover:border-status-danger/80 w-full"
               >
                 Delete Account
               </Button>
@@ -788,12 +772,48 @@ const SettingsPage = () => {
             <Button
               variant="ghost"
               onClick={logout}
-              className="w-full text-theme-secondary hover:text-theme-primary border border-gray-500"
+              className="w-full text-theme-secondary hover:text-theme-primary border border-theme-border"
             >
               Sign Out
             </Button>
           </div>
         </div>
+
+        {/* Permission Prompt Modal */}
+        {showPermissionPrompt && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-theme-card rounded-xl shadow-xl max-w-md w-full p-6">
+              <div className="text-center mb-6">
+                <div className="bg-accent-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Bell className="w-8 h-8 text-accent-primary" />
+                </div>
+                <h3 className="text-mobile-lg font-heading font-semibold text-theme-primary mb-2">
+                  Enable Notifications?
+                </h3>
+                <p className="text-theme-secondary text-mobile-sm">
+                  Get reminders for due books and never miss a return date. You can change this later in settings.
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => handlePermissionPrompt(false)}
+                  className="flex-1"
+                >
+                  Maybe Later
+                </Button>
+                <Button
+                  onClick={() => handlePermissionPrompt(true)}
+                  className="flex-1"
+                  icon={Bell}
+                >
+                  Enable Notifications
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Delete Account Confirmation Modal */}
         {showDeleteConfirm && (
