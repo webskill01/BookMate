@@ -263,7 +263,25 @@ const handleManualCheck = async () => {
       </div>
     );
   }
-
+const testMobileNotification = async () => {
+  console.log('🔥 Testing mobile notification...');
+  
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification('📱 Mobile Test', {
+        body: 'This is a test notification for mobile',
+        icon: '/icons/icon-192x192.png',
+        tag: 'mobile-test'
+      });
+      console.log('🔥 Mobile notification sent successfully!');
+    } catch (error) {
+      console.error('🔥 Mobile notification failed:', error);
+    }
+  } else {
+    console.log('🔥 Service worker not supported');
+  }
+};
 
 
   return (
@@ -295,7 +313,13 @@ const handleManualCheck = async () => {
               >
                 Check Notifications
               </Button>
-              
+
+              <button 
+  onClick={testMobileNotification} 
+  className="px-4 py-2 bg-purple-500 text-white rounded ml-2"
+>
+  🔥 Test Mobile
+</button>
               <Button
                 onClick={() => navigate('/add-book')}
                 icon={Plus}

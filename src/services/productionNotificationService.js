@@ -315,51 +315,54 @@ async sendImmediateBookNotification(book) {
       body = `Due in ${book.daysRemaining} days. Plan your return!`;
     }
 
-    // DESKTOP: Browser notification (limited features)
+    // MOBILE-FIRST: Try service worker notifications first
+    if ('serviceWorker' in navigator) {
+      console.log('🔥 Using service worker notification (mobile-friendly)');
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.showNotification(title, {
+          body,
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/icon-72x72.png',
+          tag: `book-${book.id || 'unknown'}`,
+          data: {
+            bookId: book.id || null,
+            bookTitle: book.title || 'Unknown Book',
+            dueDate: book.dueDateFormatted || book.dueDate,
+            daysRemaining: book.daysRemaining,
+            fine: book.fine || 0
+          },
+          requireInteraction: true,
+          vibrate: [200, 100, 200], // Mobile vibration
+          actions: [
+            {
+              action: 'view',
+              title: 'View Book'
+            }
+          ]
+        });
+        return true;
+      } catch (swError) {
+        console.error('Service worker notification failed:', swError);
+        // Fall through to browser notification
+      }
+    }
+
+    // FALLBACK: Browser notification (desktop)
     if ('Notification' in window && Notification.permission === 'granted') {
-      console.log('Creating browser notification:', title);
+      console.log('🔥 Using browser notification (desktop fallback)');
       const notification = new Notification(title, {
         body,
         icon: '/icons/icon-192x192.png',
         tag: `book-${book.id || 'unknown'}`
-        // NO actions, requireInteraction, or badge for browser notifications!
       });
       
-      // Manual click handler for desktop
       notification.onclick = () => {
         window.focus();
         notification.close();
       };
       
-      // Auto close after 8 seconds
       setTimeout(() => notification.close(), 8000);
-      return true;
-    }
-
-    // MOBILE: Service Worker notification (full features)
-    if ('serviceWorker' in navigator) {
-      console.log('Creating service worker notification:', title);
-      const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification(title, {
-        body,
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png',
-        tag: `book-${book.id || 'unknown'}`,
-        data: {
-          bookId: book.id || null,
-          bookTitle: book.title || 'Unknown Book',
-          dueDate: book.dueDateFormatted || book.dueDate,
-          daysRemaining: book.daysRemaining,
-          fine: book.fine || 0
-        },
-        requireInteraction: true,
-        actions: [
-          {
-            action: 'view',
-            title: 'View Book'
-          }
-        ]
-      });
       return true;
     }
 
@@ -371,6 +374,7 @@ async sendImmediateBookNotification(book) {
     return false;
   }
 }
+
 
 
   async updateLastCheckTime(userId) {
